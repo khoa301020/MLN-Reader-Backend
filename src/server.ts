@@ -3,6 +3,7 @@ import express from "express";
 import mongoose, { ConnectOptions } from "mongoose";
 import morgan from "morgan";
 // import routes
+import { authRoutes } from "./routes/auth.route";
 
 // init
 const app = express();
@@ -25,6 +26,7 @@ mongoose.connect(
 app.get("/", (req, res) => {
     return res.send("Hello World");
 });
+app.use("/api/auth", authRoutes);
 
 // start server
 const PORT = process.env.PORT;
