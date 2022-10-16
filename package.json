@@ -1,0 +1,29 @@
+{
+    "name": "mln-reader-backend",
+    "version": "1.0.0",
+    "description": "Backend for MLN Reader",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "test": "jest"
+    },
+    "author": "Beast666",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+"
+    },
+    "dependencies": {
+        "dotenv": "^16.0.3",
+        "express": "^4.18.2",
+        "mongoose": "^6.6.5",
+        "morgan": "^1.10.0",
+        "nodemon": "^2.0.20"
+    },
+    "devDependencies": {
+        "eslint": "^8.25.0",
+        "eslint-config-airbnb-base": "^15.0.0",
+        "eslint-plugin-import": "^2.26.0",
+        "jest": "^29.2.0"
+    }
+}
