@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import express from "express";
-import { User } from "../models/user.model";
+import User from "../models/user.model.js";
 
 const router = express.Router();
 
@@ -42,36 +42,33 @@ router.post("/register", (req, res) => {
 
 // create route to login user
 router.post("/login", (req, res) => {
-    User.findOne(
-        { username: req.body.username },
-        (err: any, user: { password: string }) => {
-            if (err) {
-                res.status(400).send(err);
-            } else if (!user) {
-                res.status(400).json({
-                    message: "User not found!",
-                });
+    User.findOne({ username: req.body.username }, (err, user) => {
+        if (err) {
+            res.status(400).send(err);
+        } else {
+            if (!user) {
+                res.status(404).send("User not found");
             } else {
                 bcrypt.compare(
                     req.body.password,
                     user.password,
                     (err, result) => {
                         if (err) {
-                            res.send(err);
-                        } else if (!result) {
-                            res.status(400).json({
-                                message: "Password is incorrect!",
-                            });
+                            res.status(400).send(err);
                         } else {
-                            res.json({
-                                message: "Login successful!",
-                            });
+                            if (result) {
+                                res.status(200).json({
+                                    message: "Login successful!",
+                                });
+                            } else {
+                                res.status(401).send("Login failed!");
+                            }
                         }
                     }
                 );
             }
         }
-    );
+    });
 });
 
-export { router as authRoutes };
+export default router;

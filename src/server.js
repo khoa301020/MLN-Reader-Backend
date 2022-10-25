@@ -1,9 +1,9 @@
 import "dotenv/config";
 import express from "express";
-import mongoose, { ConnectOptions } from "mongoose";
+import mongoose from "mongoose";
 import morgan from "morgan";
 // import routes
-import { authRoutes } from "./routes/auth.route";
+import authRoutes from "./routes/auth.route.js";
 
 // init
 const app = express();
@@ -14,12 +14,8 @@ app.use(morgan("tiny"));
 app.use(express.urlencoded({ extended: false }));
 
 // connect to mongodb
-mongoose.connect(
-    process.env.MONGO_URI!,
-    {
-        useNewUrlParser: true,
-    } as ConnectOptions,
-    () => console.log("Connected to db!")
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true }, () =>
+    console.log("Connected to db!")
 );
 
 // routes

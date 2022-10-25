@@ -2,10 +2,10 @@
     "name": "mln-reader-backend",
     "version": "1.0.0",
     "description": "Backend for MLN Reader",
-    "main": "src/server.ts",
+    "main": "src/server.js",
     "scripts": {
-        "start": "node src/server.ts",
-        "dev": "nodemon src/server.ts"
+        "start": "node src/server.js",
+        "dev": "nodemon src/server.js"
     },
     "author": "Beast666",
     "license": "ISC",
@@ -23,21 +23,13 @@
         "joi": "^17.6.3",
         "jsonwebtoken": "^8.5.1",
         "mongoose": "^6.6.5",
-        "morgan": "^1.10.0",
-        "ts-node": "^10.9.1",
-        "typescript": "^4.8.4"
+        "morgan": "^1.10.0"
     },
     "devDependencies": {
-        "@types/bcryptjs": "^2.4.2",
-        "@types/cheerio": "^0.22.31",
-        "@types/express": "^4.17.14",
-        "@types/faker": "^6.6.9",
-        "@types/jsonwebtoken": "^8.5.9",
-        "@types/morgan": "^1.9.3",
-        "@types/node": "^18.11.0",
         "nodemon": "^2.0.20"
     },
     "engines": {
         "node": ">=16.18.0"
-    }
+    },
+    "type": "module"
 }
