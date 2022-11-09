@@ -14,6 +14,7 @@
         "url": "https://github.com/khoa301020/MLN-Reader-Backend.git"
     },
     "dependencies": {
+        "@aws-sdk/client-s3": "^3.32.0",
         "axios": "^1.1.3",
         "bcryptjs": "^2.4.3",
         "cheerio": "^1.0.0-rc.12",
