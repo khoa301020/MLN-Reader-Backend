@@ -128,3 +128,6 @@ dist
 
 # Crawler & Crawler data
 crawler/
+
+# Uploads
+uploads/
