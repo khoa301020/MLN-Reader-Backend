@@ -7,11 +7,12 @@
 </head>
 
 <body>
-    <form action="http://localhost:3000/api/manga/upload" method="post" enctype="multipart/form-data">
-        <p><input type="text" name="book" placeholder="Book name">
-        <p><input type="text" name="chapter" placeholder="Chapter">
-        <p><input type="file" name="file" accept=".zip,.ZIP">
-        <p><button type="submit">Submit</button>
+    <form action="http://localhost:3333/api/manga/upload" method="post" enctype="multipart/form-data">
+        <p><input type="text" name="manga_id" placeholder="Book id"></p>
+        <p><input type="text" name="chapter_title" placeholder="Chapter title"></p>
+        <p><input type="number" name="chapter_order" placeholder="Chapter order"></p>
+        <p><input type="file" name="file" accept=".zip,.ZIP"></p>
+        <p><button type="submit">Submit</button></p>
     </form>
 </body>
 

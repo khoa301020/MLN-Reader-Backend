@@ -23,9 +23,17 @@ const mangaSchema = new mongoose.Schema({
     },
     chapters: [
         {
-            chapterNumber: {
+            chapterOrder: {
                 type: Number,
+                index: true,
                 required: true,
+                // unique: true,
+                trim: true,
+            },
+            chapterTitle: {
+                type: String,
+                required: true,
+                trim: true,
             },
             pages: [
                 {
@@ -36,6 +44,7 @@ const mangaSchema = new mongoose.Schema({
                     image: {
                         type: String,
                         required: true,
+
                     },
                 },
             ],
