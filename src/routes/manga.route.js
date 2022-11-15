@@ -8,7 +8,6 @@ var storage = multer.diskStorage({
         cb(null, 'uploads/')
     },
     filename: function (req, file, cb) {
-        console.log(file);
         cb(null, req.body.manga_id + '_' + req.body.chapter_order + '_' + Date.now() + path.extname(file.originalname)) //Appending extension
     }
 })

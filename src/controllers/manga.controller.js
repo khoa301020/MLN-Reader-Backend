@@ -2,7 +2,7 @@ import fs from 'fs';
 import JSZip from 'jszip';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import s3 from '../libs/S3.js';
+import bucket from '../libs/GCP-Storage.js';
 import Manga from '../models/manga.model.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -68,7 +68,6 @@ const CreateManga = (req, res) => {
 };
 
 const UploadChapter = (req, res) => {
-    console.log(req.file);
     if (path.extname(req.file.originalname) !== '.zip') {
         fs.unlinkSync(req.file.path);
         return res.status(400).json({ error: 'File must be a zip file' })
@@ -95,18 +94,16 @@ const UploadChapter = (req, res) => {
                     const buffer = zipEntry.async('arraybuffer');
                     const setParams = buffer.then(async function (content) {
                         return {
-                            Bucket: process.env.AWS_BUCKET_NAME,
-                            Key: req.body.manga_id + '/' + req.body.chapter_order + '/' + zipEntry.name,
-                            Body: Buffer.from(content),
+                            Path: req.body.manga_id + '/' + req.body.chapter_order + '/' + zipEntry.name,
+                            Data: Buffer.from(content),
                         }
                     });
                     const upload = setParams.then(async function (params) {
-                        return await s3.upload(params).promise().then(function (data) {
+                        return await bucket.file(params.Path).save(params.Data).then(() => {
                             listPages.push({
                                 pageNumber: zipEntry.name.replace(/\.[^.]+$/, ''),
-                                image: data.Location,
-                            }
-                            );
+                                image: process.env.GCP_STORAGE_URL + params.Path,
+                            });
                         });
                     });
                     listPromises.push(upload);
@@ -141,6 +138,7 @@ const UploadChapter = (req, res) => {
                 });
             });
         });
+        fs.unlinkSync(req.file.path);
     } catch (err) {
         res.status(400).json({
             status: 400,

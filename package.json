@@ -14,14 +14,12 @@
         "url": "https://github.com/khoa301020/MLN-Reader-Backend.git"
     },
     "dependencies": {
-        "aws-sdk": "^2.1250.0",
+        "@google-cloud/storage": "^6.7.0",
         "axios": "^1.1.3",
         "bcryptjs": "^2.4.3",
         "cheerio": "^1.0.0-rc.12",
         "dotenv": "^16.0.3",
         "express": "^4.18.2",
-        "faker": "^6.6.6",
-        "joi": "^17.6.3",
         "jsonwebtoken": "^8.5.1",
         "jszip": "^3.10.1",
         "mongoose": "^6.6.5",
