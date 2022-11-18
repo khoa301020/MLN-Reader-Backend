@@ -3,13 +3,11 @@
 
 ## Features
 
- - Using Typescript
  - ES2021 with ```promise.any```, ```string.replaceAll```, etc.
  - Uses [yarn](https://yarnpkg.com)
  - Express + MongoDB ([Mongoose](http://mongoosejs.com/))
  - Consistent coding styles with [editorconfig](http://editorconfig.org)
  - Load environment variables from .env files with [dotenv](https://github.com/rolodato/dotenv-safe)
- - Request validation with [joi](https://github.com/hapijs/joi)
  - Linting with [eslint](http://eslint.org)
  - Logging with [morgan](https://github.com/expressjs/morgan)
  - API documentation generation with [apidoc](http://apidocjs.com)
