@@ -127,7 +127,8 @@ dist
 .pnp.*
 
 # Crawler & Crawler data
-crawler/
+crawler/data
+crawler/backup
 
 # Uploads
 uploads/
