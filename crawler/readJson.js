@@ -11,6 +11,44 @@ function prettyAll() {
         const novel = JSON.parse(fileData.toString());
         novel.description = novel.description.trim();
 
+        novel.info = {
+            title: novel.title,
+            url: novel.url,
+            cover: novel.cover,
+            author: novel.author,
+            artist: novel.artist,
+            status: novel.status,
+            otherNames: novel.otherNames,
+            description: novel.description,
+            uploader: novel.uploader,
+            tags: novel.tags,
+            followCount: novel.followCount,
+            wordCount: novel.wordCount,
+            viewCount: novel.viewCount,
+            ratingCount: novel.ratingCount,
+            lastUpdate: novel.lastUpdate,
+        }
+
+        delete novel.title;
+        delete novel.url;
+        delete novel.cover;
+        delete novel.author;
+        delete novel.artist;
+        delete novel.status;
+        delete novel.otherNames;
+        delete novel.description;
+        delete novel.uploader;
+        delete novel.tags;
+        delete novel.followCount;
+        delete novel.wordCount;
+        delete novel.viewCount;
+        delete novel.ratingCount;
+        delete novel.lastUpdate;
+
+        const section = novel.sections;
+        delete novel.sections;
+        novel.sections = section;
+
         for (const section of novel.sections) {
             section.cover = section.sectionCover;
             delete section.sectionCover;

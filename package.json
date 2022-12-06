@@ -27,8 +27,7 @@
         "mongoose": "^6.6.5",
         "morgan": "^1.10.0",
         "multer": "^1.4.5-lts.1",
-        "node-stream-zip": "^1.15.0",
-        "pretty": "^2.0.0"
+        "node-stream-zip": "^1.15.0"
     },
     "devDependencies": {
         "nodemon": "^2.0.20"
