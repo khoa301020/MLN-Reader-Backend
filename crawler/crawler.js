@@ -47,6 +47,7 @@ async function getNovel() {
                 $("section.volume-list").each((index, section) => {
                     const sectionId = $(section).find(".sect-header").attr("id");
                     const sectionName = $(section).find(".sect-header .sect-title").text().trim();
+                    const sectionCover = $(section).find(".sect-header .sect-cover img").attr("src");
                     const sectionChapters = [];
                     $(section).find(".chapter-name a").each((i, e) => {
                         const chapter = {
@@ -61,6 +62,7 @@ async function getNovel() {
                         id: sectionId,
                         name: sectionName,
                         chapters: sectionChapters,
+                        cover: sectionCover,
                     }
                     novel.sections.push(sectionObj);
                 });
@@ -69,9 +71,12 @@ async function getNovel() {
                     id: $(".series-owner_name a").attr("href").split("/")[4],
                     name: $(".series-owner_name a").text(),
                 }
+                novel.otherNames = $(".fact-value").toArray().map((e) => $(e).text().trim());
+                novel.cover = $(".series-cover .img-in-ratio").attr("style").split("'")[1];
                 novel.author = $('.info-name:contains("Tác giả:")').next().children().text();
                 novel.artist = $('.info-name:contains("Họa sĩ:")').next().children().text();
                 novel.status = $('.info-name:contains("Tình trạng:")').next().children().text();
+                novel.description = $('.summary-content').text();
                 novel.followCount = $(".feature-name").eq(0).text().match(/\d+/g).join("");
                 novel.lastUpdate = $(".statistic-value").eq(0).find("time").attr("datetime");
                 novel.wordCount = $(".statistic-value").eq(1).text().match(/\d+/g).join("");

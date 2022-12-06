@@ -1,7 +1,7 @@
+import axios from "axios";
 import * as cheerio from "cheerio";
 import fs from "fs";
 import path from "path";
-import pretty from "pretty";
 
 function prettyAll() {
     const jsonsInDir = fs.readdirSync('./crawler/backup').filter(file => path.extname(file) === '.json');
@@ -9,8 +9,11 @@ function prettyAll() {
     jsonsInDir.forEach(file => {
         const fileData = fs.readFileSync(path.join('./crawler/backup', file), 'utf8');
         const novel = JSON.parse(fileData.toString());
+        novel.description = novel.description.trim();
 
         for (const section of novel.sections) {
+            section.cover = section.sectionCover;
+            delete section.sectionCover;
             for (const chapter of section.chapters) {
                 try {
                     const $ = cheerio.load(chapter.content);
@@ -21,9 +24,16 @@ function prettyAll() {
                     $('h3+p').remove();
                     $('h3').remove();
 
-                    chapter.note = pretty($('.note-reg').html());
-                    $('.note-reg').remove();
-                    chapter.content = pretty($('*').html());
+                    chapter.notes = [];
+                    $('.note-reg>div').each((i, el) => {
+                        const noteId = $(el).attr('id');
+                        const noteContent = $(el).find('span.note-content_real').html();
+                        chapter.notes.push({ noteId, noteContent });
+                    });
+
+                    $('head').remove();
+
+                    chapter.content = $('body').html().trim();
                 } catch (error) {
                     console.log(chapter);
                     console.log(error);
@@ -36,4 +46,33 @@ function prettyAll() {
     });
 }
 
+async function addDescription() {
+    const jsonsInDir = fs.readdirSync('./crawler/backup').filter(file => path.extname(file) === '.json');
+
+    jsonsInDir.forEach(async file => {
+        const fileData = fs.readFileSync(path.join('./crawler/backup', file), 'utf8');
+        const novel = JSON.parse(fileData.toString());
+
+        await axios.get(novel.url).then(res => {
+            const $ = cheerio.load(res.data);
+            novel.cover = $(".series-cover .img-in-ratio").attr("style").split("'")[1];
+            novel.otherNames = $(".fact-value div").toArray().map((e) => $(e).text().trim());
+            novel.description = $('.summary-content').text().trim();
+
+            for (const section of novel.sections) {
+                $("section.volume-list").each((i, el) => {
+                    const sectionId = $(el).find(".sect-header").attr("id");
+                    if (sectionId === section.id) {
+                        section.cover = $(el).find(".img-in-ratio").attr("style").split("'")[1];
+                    }
+                });
+            }
+        });
+
+        fs.writeFileSync(path.join('./crawler/backup', file), JSON.stringify(novel));
+        console.log(`Done: ${file}`);
+    });
+}
+
 prettyAll();
+// await addDescription();
