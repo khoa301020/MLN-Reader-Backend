@@ -1,4 +1,7 @@
-node_modules/
-uploads/
-example_data/
-crawler/
+/node_modules/
+/uploads/
+/example_data/
+/crawler/
+.gcloudignore
+.git
+.gitignore
