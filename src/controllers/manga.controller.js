@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import bucket from '../libs/GCP-Storage.js';
-import Manga from '../models/manga.model.js';
+import { Manga } from '../models/manga.model.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

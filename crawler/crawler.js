@@ -231,6 +231,135 @@ async function getChapter() {
     };
 }
 
-const NovelList = await getNovel();
+async function bookbuy() {
+    const url = "https://bookbuy.vn/api/CategoryApi/userMenuByMaincat/1";
+    const baseUrl = "https://bookbuy.vn";
+
+    const config = {
+        headers: {
+            "Accept-Encoding": "gzip, br",
+        }
+    }
+
+    let listCategory = [];
+
+    await axios.get(url, config).then(async (res) => {
+        // await fetch(url, config).then(async (res) => {
+        console.log("Start list category");
+        const $ = cheerio.load(res.data);
+        $("ul").first().children("li").each((i, e) => {
+            const category = {
+                code: $(e).find("a").first().attr("href").split("/")[2].split(".")[0],
+                name: $(e).find("a").first().text().trim(),
+                url: baseUrl + $(e).find("a").first().attr("href"),
+            };
+            listCategory.push(category);
+        });
+    }).then(() => {
+        console.log(listCategory.length);
+        fs.writeFile('./crawler/bookbuy/bookbuycategory.json', JSON.stringify(listCategory), (err) => {
+            if (err) throw err;
+        });
+    });
+
+    let listBook = [];
+    let listBookPromises = [];
+
+    for (const category of listCategory) {
+        const bookPromise = await axios.get(category.url, config).then(async (res) => {
+            const $ = cheerio.load(res.data);
+            $(".product-item").each((i, e) => {
+                const book = {
+                    id: $(e).find(".img-view").attr("productid"),
+                    title: $(e).find(".t-view").text().trim(),
+                    url: baseUrl + $(e).find("a").attr("href"),
+                    image: baseUrl + $(e).find(".slimmage").attr("src"),
+                };
+
+                for (const item of listBook)
+                    if (item.id == book.id) return;
+                listBook.push(book);
+            });
+        });
+        listBookPromises.push(await timer(1000).then(() => bookPromise));
+        console.log("[Category crawled] " + category.name);
+    }
+
+    Promise.all(listBookPromises).then(async () => {
+        fs.writeFile('./crawler/bookbuy/bookbuynodata.json', JSON.stringify(listBook), (err) => {
+            if (err) throw err.cause;
+        });
+        console.log(listBook.length);
+        return listBook;
+    });
+
+    var bookPromises = [];
+    for (const book of listBook) {
+        try {
+            const getBook = await axios.get(book.url, config).then((res) => {
+                const $ = cheerio.load(res.data);
+                book.author = $(".author-list").toArray().map((e) => $(e).find("h2").text().trim());
+                book.translator = $(".tran-list").toArray().map((e) => $(e).find("h2").text().trim());
+                $(".tag-span span").eq(0).remove();
+                book.categories = $(".tag-span span").toArray().map((e) => {
+                    try {
+                        return {
+                            code: $(e).find("a").attr("href").split("/")[2].split(".")[0],
+                            name: $(e).find("a").text().trim(),
+                        }
+                    } catch (error) {
+                        return {
+                            name: $(e).find("a").text().trim(),
+                        }
+                    }
+                });
+                $(".des-des p").eq(-1).remove();
+                book.info = $(".bbook-detail-left-1-1 ul li").toArray().map((e) => {
+                    if ($(e).text().trim().includes("Ngày xuất bản")) {
+                        const fullText = $(e).text().trim().replace(/\s+/g, ' ');
+                        return {
+                            field: fullText.split(":")[0].trim() + ':',
+                            value: fullText.split(":")[1].trim(),
+                        }
+                    } else {
+                        return {
+                            field: $(e).first().contents().filter(function () {
+                                return this.type === 'text';
+                            }).text().trim().replace(/\s+/g, ' '),
+                            value: $(e).children().text().trim().replace(/\s+/g, ' '),
+                        }
+                    }
+                });
+                book.description = $(".des-des").html().trim();
+                console.log("[Book crawled] " + book.title);
+            });
+            bookPromises.push(await timer(1000).then(() => getBook));
+            // bookPromises.push(getBook);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    Promise.all(bookPromises).then(() => {
+        fs.writeFile('./crawler/bookbuy/bookbuy.json', JSON.stringify(listBook), (err) => {
+            console.log("Done");
+        });
+    });
+}
+
+async function test() {
+    const url = "https://bookbuy.vn/sach/van-hoc-viet-nam";
+    await fetch(url).then(async (res) => {
+        const body = await res.text();
+        console.log("Start list book");
+        console.log(body);
+    }).catch((err) => {
+        console.log(err.cause);
+    });
+}
+
+// const NovelList = await getNovel();
 // const NovelList = await getContent();
 // const NovelList = await getChapter();
+const NovelList = await bookbuy();
+// const NovelList = await test();

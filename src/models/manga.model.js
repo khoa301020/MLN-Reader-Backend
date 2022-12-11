@@ -1,5 +1,24 @@
 import mongoose from "mongoose";
 
+// create manga status schema
+const mangaStatusSchema = new mongoose.Schema({
+    lastMangaId: {
+        type: Number,
+        required: true,
+        default: 0,
+    },
+    lastSectionId: {
+        type: Number,
+        required: true,
+        default: 0,
+    },
+    lastChapterId: {
+        type: Number,
+        required: true,
+        default: 0,
+    },
+});
+
 // create manga schema
 const mangaSchema = new mongoose.Schema({
     id: {
@@ -68,6 +87,8 @@ const mangaSchema = new mongoose.Schema({
     },
 });
 
-const Manga = mongoose.model("Manga", mangaSchema);
+const Manga = mongoose.model("Manga", mangaSchema, "mangas");
+const MangaStatus = mongoose.model("MangaStatus", mangaStatusSchema, "mangaStatus");
 
-export default Manga;
+export { Manga, MangaStatus };
+
