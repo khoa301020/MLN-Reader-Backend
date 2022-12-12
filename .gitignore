@@ -135,3 +135,5 @@ uploads/
 
 # Credentials
 key.json
+
+.kpt-pipeline/

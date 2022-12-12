@@ -1,20 +1,11 @@
-import { MangaStatus } from "../models/manga.model.js";
-import { NovelStatus } from "../models/novel.model.js";
+import SystemStatus from '../models/common.model.js';
 
-
-function initStatus() {
+const initStatus = () => {
     // check if novel status exists
-    NovelStatus.findOne({}, function (err, novelStatus) {
-        if (!novelStatus) {
-            const novelStatus = new NovelStatus;
-            novelStatus.save();
-        }
-    });
-    // check if manga status exists
-    MangaStatus.findOne({}, function (err, mangaStatus) {
-        if (!mangaStatus) {
-            const mangaStatus = new MangaStatus;
-            mangaStatus.save();
+    SystemStatus.findOne({}, function (err, status) {
+        if (!status) {
+            const status = new SystemStatus;
+            status.save();
         }
     });
 }

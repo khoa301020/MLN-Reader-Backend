@@ -6,23 +6,35 @@ import path from "path";
 const timer = ms => new Promise(res => setTimeout(res, ms));
 
 async function importAll() {
-    const baseUrl = "http://localhost:3333/api/novel";
+    const baseUrl = "http://localhost:3333/api/novel/create-action";
     const jsonsInDir = fs.readdirSync('./crawler/data').filter(file => path.extname(file) === '.json');
 
     const novelPromises = [];
     for (const file of jsonsInDir) {
         const fileData = fs.readFileSync(path.join('./crawler/data', file), 'utf8');
         const novel = JSON.parse(fileData.toString());
-        const novelUrl = `${baseUrl}/create-novel`;
-        const createNovel = await axios.post(novelUrl, {
+        const createNovel = await axios.post(baseUrl, {
+            subject: "novel",
             hakoId: novel.id,
-            info: novel.info,
+            hakoUrl: novel.info.url,
+            title: novel.info.title,
+            cover: novel.info.cover,
+            author: novel.info.author,
+            artist: novel.info.artist,
+            status: novel.info.status,
+            otherNames: novel.info.otherNames,
+            description: novel.info.description,
+            uploader: {
+                userId: novel.info.uploader.id,
+                userName: novel.info.uploader.name,
+            },
+            tags: novel.info.tags,
         }).then(async resNovel => {
             console.log(resNovel.data.message);
             const sectionPromises = [];
             for (const section of novel.sections) {
-                const sectionUrl = `${baseUrl}/create-section`;
-                const createSection = await axios.post(sectionUrl, {
+                const createSection = await axios.post(baseUrl, {
+                    subject: "section",
                     novelId: resNovel.data.result.id,
                     hakoId: section.id,
                     cover: section.cover,
@@ -31,21 +43,20 @@ async function importAll() {
                     console.log(resSection.data.message);
                     const chapterPromises = [];
                     for (const chapter of section.chapters) {
-                        const chapterUrl = `${baseUrl}/create-chapter`;
-                        const createChapter = await axios.post(chapterUrl, {
+                        const createChapter = await axios.post(baseUrl, {
+                            subject: "chapter",
                             sectionId: resSection.data.result.id,
                             hakoId: chapter.id,
                             title: chapter.title,
-                            url: chapter.url,
+                            hakoUrl: chapter.url,
                             content: chapter.content,
                             wordCount: chapter.wordCount,
-                            lastUpdate: chapter.lastUpdate,
                         }).then(async resChapter => {
                             console.log(resChapter.data.message);
                             const notePromises = [];
                             for (const note of chapter.notes) {
-                                const noteUrl = `${baseUrl}/create-note`;
-                                const createNote = await axios.post(noteUrl, {
+                                const createNote = await axios.post(baseUrl, {
+                                    subject: "note",
                                     chapterId: resChapter.data.result.id,
                                     hakoId: note.noteId,
                                     content: note.noteContent,

@@ -7,8 +7,10 @@ import initStatus from "./utils/initStatus.js";
 const PORT = process.env.PORT;
 connectToDatabase()
     .then(() => {
-        app.listen(PORT, () => console.log(`Running server on port: ${PORT}`));
-        initStatus();
+        app.listen(PORT, () => {
+            console.log(`Running server on port: ${PORT}`);
+            initStatus();
+        });
     })
     .catch((error) => {
         console.log('Connection with database generated an error:\r\n');

@@ -1,6 +1,7 @@
 import _const from "../constants/const.js";
 import * as Helper from "../helper/helper.js";
-import { Chapter, Note, Novel, NovelStatus, Section } from "../models/novel.model.js";
+import SystemStatus from "../models/common.model.js";
+import { Chapter, Note, Novel, Section } from "../models/novel.model.js";
 
 const GetNovelList = async (req, res) => {
     // get only novels that are not deleted
@@ -17,7 +18,7 @@ const GetNovel = (req, res) => {
     Novel.findOne({ id: req.query.novelId })
         .populate({
             path: 'sections',
-            populate: { path: 'chapters', select: '-content -notes -url -wordCount' }
+            populate: { path: 'chapters', select: '-content -notes -hakoUrl' }
         }).exec((err, novel) => {
             if (err) return res.error({ message: "Get novel failed", errors: err });
             if (!novel) return res.error({ message: "Novel not found" });
@@ -29,14 +30,21 @@ const GetNovel = (req, res) => {
 const GetChapter = (req, res) => {
     if (!req.query.chapterId) return res.error({ message: "Chapter id is required" });
 
-    Chapter.findOne({ id: req.query.chapterId }, { '_id': 0, '__v': 0 })
-        .populate({
-            path: 'notes', select: '-_id -__v -deletedAt', match: { deletedAt: null },
-        }).exec((err, chapter) => {
+    Chapter.findOne({ id: req.query.chapterId })
+        .populate({ path: 'notes' }).exec((err, chapter) => {
             if (err) return res.error({ message: "Get chapter failed", errors: err });
             if (!chapter) return res.error({ message: "Chapter not found" });
 
-            res.success({ message: "Get chapter successfully", result: chapter });
+
+            chapter.viewCount += 1;
+
+            chapter.save((err, chapterSave) => {
+                if (err) console.log(err);
+                if (err) return res.error({ message: "Get chapter failed", errors: err });
+                res.success({ message: "Get chapter successfully", result: chapterSave });
+
+                // update view count
+            });
         });
 };
 
@@ -51,43 +59,52 @@ const CreateAction = (req, res) => {
             lastIdProperty = "lastNovelId";
             entity = new Novel({
                 hakoId: req.body.hakoId,
-                info: req.body.info,
+                hakoUrl: req.body.hakoUrl,
+                title: req.body.title,
+                cover: req.body.cover,
+                author: req.body.author,
+                artist: req.body.artist,
+                status: req.body.status,
+                otherNames: req.body.otherNames,
+                description: req.body.description,
+                uploader: req.body.uploader,
+                tags: req.body.tags,
             });
+            prefix = "novel_";
             break;
         case 'section':
             parentName = "novel";
             ParentModel = Novel;
             parentIdProperty = "novelId";
-            lastIdProperty = "lastSectionId";
+            lastIdProperty = "lastNovelSectionId";
             entity = new Section({
                 novelId: req.body.novelId,
                 hakoId: req.body.hakoId,
                 cover: req.body.cover,
                 name: req.body.name,
             });
-            prefix = "volume_";
+            prefix = "volume_n";
             break;
         case 'chapter':
             parentName = "section";
             ParentModel = Section;
             parentIdProperty = "sectionId";
-            lastIdProperty = "lastChapterId";
+            lastIdProperty = "lastNovelChapterId";
             entity = new Chapter({
                 sectionId: req.body.sectionId,
                 hakoId: req.body.hakoId,
+                hakoUrl: req.body.hakoUrl,
                 title: req.body.title,
-                url: req.body.url,
                 content: req.body.content,
                 wordCount: req.body.wordCount,
-                lastUpdate: req.body.lastUpdate,
             });
-            prefix = "c";
+            prefix = "chapter_n";
             break;
         case 'note':
             parentName = "chapter";
             ParentModel = Chapter;
             parentIdProperty = "chapterId";
-            lastIdProperty = "lastNoteId";
+            lastIdProperty = "lastNovelNoteId";
             entity = new Note({
                 chapterId: req.body.chapterId,
                 hakoId: req.body.hakoId,
@@ -99,21 +116,21 @@ const CreateAction = (req, res) => {
             return res.error({ message: "Subject is invalid" });
     }
 
-    NovelStatus.findOne({}).exec(function (err, novelStatus) {
+    SystemStatus.findOne({}).exec(function (err, SystemStatus) {
         if (err) return res.internal({ message: "Error occurred", errors: err });
-        if (!novelStatus) return res.error({ message: "Novel status not found" });
+        if (!SystemStatus) return res.error({ message: "Novel status not found" });
         if (!ParentModel) {
 
-            novelStatus[lastIdProperty] += 1;
+            SystemStatus[lastIdProperty] += 1;
 
             const target = entity;
-            target.id = novelStatus[lastIdProperty];
+            target.id = prefix + SystemStatus[lastIdProperty];
 
             target.save((err) => {
                 if (err) return res.error({ message: `Create ${req.body.subject} failed`, errors: err });
-                novelStatus.save((err) => {
+                SystemStatus.save((err) => {
                     if (err) return res(err);
-                    res.created({ message: `${Helper.capitalizeFirstLetter(req.body.subject)} ${req.body.hakoId} created!`, result: target });
+                    res.created({ message: `${Helper.capitalizeFirstLetter(req.body.subject)} ${target.id} created!`, result: target });
                 });
             });
         } else {
@@ -121,10 +138,10 @@ const CreateAction = (req, res) => {
                 if (err) return res.internal({ message: "Error occurred", errors: err });
                 if (!parent) return res.error({ message: `${Helper.capitalizeFirstLetter(parentName)} not found` });
 
-                novelStatus[lastIdProperty] += 1;
+                SystemStatus[lastIdProperty] += 1;
 
                 const target = entity;
-                target.id = prefix + novelStatus[lastIdProperty];
+                target.id = prefix + SystemStatus[lastIdProperty];
 
                 if (!parent[`${req.body.subject}s`]) return res.internal({ message: `${Helper.capitalizeFirstLetter(parentName)} ${req.body.subject}s not found` });
                 parent[`${req.body.subject}s`].push(target._id);
@@ -133,7 +150,7 @@ const CreateAction = (req, res) => {
                     if (err) return res.error({ message: `Create ${req.body.subject} failed`, errors: err });
                     parent.save((err) => {
                         if (err) return res.error({ message: `Add ${req.body.subject} to ${parentName} failed`, errors: err });
-                        novelStatus.save((err) => {
+                        SystemStatus.save((err) => {
                             if (err) return res.error({ message: "Update novel status failed", errors: err });
                             res.created({ message: `${Helper.capitalizeFirstLetter(req.body.subject)} ${target.id} created!`, result: target });
                         });
@@ -250,6 +267,40 @@ const DeleteAction = (req, res) => {
         } else {
             return res.error({ message: "Invalid action" });
         }
+    });
+};
+
+const FollowNovel = (req, res) => {
+    if (!req.body.novelId) return res.error({ message: "Novel ID is required" });
+    if (!req.body.userId) return res.error({ message: "Novel ID is required" });
+
+    Novel.findOne({ id: req.body.novelId }).exec(function (err, novel) {
+        if (err) return res.internal({ message: "Error occurred", errors: err });
+        if (!novel) return res.error({ message: "Novel not found" });
+
+        User.findOne({ id: req.body.userId }).exec(function (err, user) {
+            if (err) return res.internal({ message: "Error occurred", errors: err });
+
+            if (!user) {
+                let newUser = new User({
+                    id: req.body.userId,
+                    novelFollows: [novel.id],
+                });
+
+                newUser.save((err) => {
+                    if (err) return res.error({ message: "Follow failed", errors: err });
+                    res.created({ message: "Followed" });
+                });
+            } else {
+                if (user.novelFollows.includes(novel.id)) return res.error({ message: "Already followed" });
+
+                user.novelFollows.push(novel.id);
+                user.save((err) => {
+                    if (err) return res.error({ message: "Follow failed", errors: err });
+                    res.created({ message: "Followed" });
+                });
+            }
+        });
     });
 };
 

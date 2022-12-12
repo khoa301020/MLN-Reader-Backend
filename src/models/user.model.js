@@ -23,6 +23,94 @@ const userSchema = new mongoose.Schema({
         required: true,
         trim: true,
     },
+    accountStatus: {
+        status: {
+            type: String,
+            required: true,
+            trim: true,
+            default: "active",
+            enum: ["active", "disabled"],
+        },
+        reason: {
+            type: String,
+            required: false,
+            trim: true,
+            default: null,
+        },
+        disabledAt: {
+            type: Date,
+            required: false,
+            default: null,
+        },
+    },
+    tokens: [
+        {
+            token: {
+                type: String,
+                required: true,
+            },
+        },
+    ],
+    followingNovels: [{
+        novelId: {
+            type: String,
+            required: true,
+        },
+        followedAt: {
+            type: Date,
+            required: true,
+            default: Date.now,
+        },
+    }],
+    followingMangas: [{
+        mangaId: {
+            type: String,
+            required: true,
+        },
+        followedAt: {
+            type: Date,
+            required: true,
+            default: Date.now,
+        },
+    }],
+    ratedNovels: [{
+        novelId: {
+            type: String,
+            required: true,
+        },
+        rating: {
+            type: Number,
+            required: true,
+        },
+        ratedAt: {
+            type: Date,
+            required: true,
+            default: Date.now,
+        },
+    }],
+    ratedMangas: [{
+        mangaId: {
+            type: String,
+            required: true,
+        },
+        rating: {
+            type: Number,
+            required: true,
+        },
+        ratedAt: {
+            type: Date,
+            required: true,
+            default: Date.now,
+        },
+    }],
+    createdAt: {
+        type: Date,
+        default: Date.now,
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now,
+    },
 });
 
 // create a method to generate token
