@@ -40,13 +40,18 @@ const Register = (req, res) => {
                 if (err) {
                     return res.error({ message: "Error occured", errors: err });
                 } else {
-                    return res.success({
-                        message: "User created!",
+                    systemStatus.save(function (err) {
+                        if (err) return res.error({ message: "Error occured", errors: err });
+                        return res.success({
+                            message: "User created!",
+                        });
                     });
                 }
+
             });
 
         });
+
     });
 }
 

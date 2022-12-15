@@ -9,7 +9,7 @@ function removeEmpty(obj) {
 
 const getCurrent = () => {
     const current = new Date().toLocaleDateString('vi-VN', {
-        month: '2-digit', day: '2-digit', year: 'numeric'
+        month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh',
     }).split('/');
     const currentDate = `${current[0]}${current[1]}${current[2]}`;
     const currentMonth = `${current[1]}${current[2]}`;
