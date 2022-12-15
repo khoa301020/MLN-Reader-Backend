@@ -45,6 +45,7 @@ async function importAll() {
                     for (const chapter of section.chapters) {
                         const createChapter = await axios.post(baseUrl, {
                             subject: "chapter",
+                            novelId: resNovel.data.result.id,
                             sectionId: resSection.data.result.id,
                             hakoId: chapter.id,
                             title: chapter.title,

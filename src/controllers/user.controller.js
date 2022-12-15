@@ -1,72 +1,79 @@
-import bcrypt from "bcryptjs";
-import User from "../models/user.model.js";
+import _const from "../constants/const.js";
+import { Comment, SystemStatus } from "../models/common.model.js";
 
-// Get all
-const GetAll = async (req, res) => {
-    try {
-        const users = await User.find({});
-        res.send(users);
-    } catch (error) {
-        res.status(500).send(error);
+const CommentAction = (req, res) => {
+    if (!req.body.targetId) return res.error({ message: "Target ID is required" });
+    if (!req.body.userId) return res.error({ message: "User ID is required" });
+    if (!req.body.content) return res.error({ message: "Content is required" });
+    if (!req.body.action) return res.error({ message: "Action is required" });
+    if (!_const.COMMENT_ACTIONS.includes(req.body.action)) return res.error({ message: "Invalid action" });
+
+    const { targetId, userId, content, action } = req.body;
+    const prefix = "comment_"
+
+    if (action === "create") {
+        SystemStatus.findOne({}).exec(function (err, SystemStatus) {
+            if (err) return res.error(err);
+            if (!SystemStatus) return res.error({ message: "System status not found" });
+
+            SystemStatus.lastCommentId += 1;
+
+            const newComment = new Comment({
+                id: prefix + SystemStatus.lastCommentId,
+                targetId,
+                userId,
+                content,
+            });
+
+            newComment.save(function (err) {
+                if (err) return res.error(err);
+                SystemStatus.save(function (err) {
+                    if (err) return res.error(err);
+                    return res.created({ message: "Comment created", result: newComment });
+                });
+            });
+        });
+    } else if (action === "modify") {
+        if (!req.body.commentId) return res.error({ message: "Comment ID is required" });
+        const { commentId } = req.body;
+
+        Comment.findOne({ id: commentId }).exec(function (err, comment) {
+            if (err) return res.error(err);
+            if (!comment) return res.error({ message: "Comment not found" });
+            if (comment.userId !== userId) return res.error({ message: "You are not the owner of this comment" });
+
+            const oldComment = comment.content;
+            const oldCommentTimestamp = comment.updatedAt;
+
+            comment.content = content;
+            comment.history.push({ content: oldComment, modifiedAt: oldCommentTimestamp });
+            comment.updatedAt = Date.now();
+
+            comment.markModified("history");
+            comment.markModified("content");
+            comment.markModified("updatedAt");
+
+            comment.save(function (err) {
+                if (err) return res.error(err);
+                return res.success({ message: "Comment modified", result: comment });
+            });
+        });
+    } else if (action === "delete") {
+        if (!req.body.commentId) return res.error({ message: "Comment ID is required" });
+        const { commentId } = req.body;
+
+        Comment.findOne({ id: commentId }).exec(function (err, comment) {
+            if (err) return res.error(err);
+            if (!comment) return res.error({ message: "Comment not found" });
+            if (comment.userId !== userId) return res.error({ message: "You are not the owner of this comment" });
+
+            comment.deletedAt = Date.now();
+            comment.save(function (err) {
+                if (err) return res.error(err);
+                return res.success({ message: "Comment deleted", result: comment });
+            });
+        });
     }
 }
 
-// Register
-const Register = (req, res) => {
-    User.init().then(() => {
-        bcrypt.hash(req.body.password, 10, (err, hash) => {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                const newUser = new User({
-                    name: req.body.name,
-                    email: req.body.email,
-                    password: hash,
-                });
-                newUser.save((err) => {
-                    if (err) {
-                        res.status(400).send(err);
-                    } else {
-                        res.status(201).json({
-                            message: "User created!",
-                        });
-                    }
-                });
-            }
-        });
-    });
-}
-
-// Login
-const Login = (req, res) => {
-    User.findOne({ username: req.body.username }, (err, user) => {
-        if (err) {
-            res.status(400).send(err);
-        } else {
-            if (!user) {
-                res.status(404).send("User not found");
-            } else {
-                bcrypt.compare(
-                    req.body.password,
-                    user.password,
-                    (err, result) => {
-                        if (err) {
-                            res.status(400).send(err);
-                        } else {
-                            if (result) {
-                                res.status(200).json({
-                                    message: "Login successful!",
-                                });
-                            } else {
-                                res.status(401).send("Login failed!");
-                            }
-                        }
-                    }
-                );
-            }
-        }
-    });
-}
-
-// Export
-export { GetAll, Register, Login };
+export { CommentAction };

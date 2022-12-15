@@ -45,6 +45,10 @@ const novelChapterSchema = new mongoose.Schema({
         unique: true,
         required: true,
     },
+    novelId: {
+        type: String,
+        required: true,
+    },
     sectionId: {
         type: String,
         required: true,
@@ -81,6 +85,12 @@ const novelChapterSchema = new mongoose.Schema({
         required: true,
         default: 0,
     },
+    comments: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Comment",
+        required: true,
+        default: [],
+    }],
     createdAt: {
         type: Date,
         required: true,
@@ -267,6 +277,35 @@ const novelSchema = new mongoose.Schema({
         required: true,
         default: [],
     }],
+    comments: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Comment",
+        required: true,
+        default: [],
+    }],
+    statistics: {
+        _id: false,
+        totalView: {
+            type: Number,
+            required: true,
+            default: 0,
+        },
+        dailyView: {
+            type: Object,
+            required: false,
+            default: {},
+        },
+        monthlyView: {
+            type: Object,
+            required: false,
+            default: {},
+        },
+        yearlyView: {
+            type: Object,
+            required: false,
+            default: {},
+        },
+    },
     createdAt: {
         type: Date,
         required: true,
@@ -300,67 +339,6 @@ novelSectionSchema.pre("find", function () {
 novelNoteSchema.pre("find", function () {
     this.where({ deletedAt: null });
 });
-
-// virtual wordCount with populate
-novelSchema.virtual("wordCount", {
-    ref: "NovelSection",
-    localField: "sections",
-    foreignField: "_id",
-    justOne: false,
-    options: {
-        match: {
-            deletedAt: null,
-        },
-        ref: "NovelChapter",
-        localField: "chapters",
-        foreignField: "_id",
-        justOne: false,
-        options: {
-            match: {
-                deletedAt: null,
-            },
-        }
-    }
-}).get(function () {
-    let wordCount = 0;
-    this.sections.forEach((section) => {
-        section.chapters.forEach((chapter) => {
-            wordCount += chapter.wordCount;
-        });
-    });
-    return wordCount;
-});
-
-// virtual viewCount with populate
-novelSchema.virtual("viewCount", {
-    ref: "NovelSection",
-    localField: "sections",
-    foreignField: "_id",
-    justOne: false,
-    options: {
-        match: {
-            deletedAt: null,
-        },
-        ref: "NovelChapter",
-        localField: "chapters",
-        foreignField: "_id",
-        justOne: false,
-        options: {
-            match: {
-                deletedAt: null,
-            },
-        }
-    }
-}).get(function () {
-    let wordCount = 0;
-    this.sections.forEach((section) => {
-        section.chapters.forEach((chapter) => {
-            wordCount += chapter.viewCount;
-        });
-    });
-    return wordCount;
-});
-
 
 novelSchema.virtual("followersCount").get(function () {
     return this.followers.length;
@@ -402,7 +380,6 @@ novelSectionSchema.set("toJSON", {
         delete ret.hakoId;
         delete ret.__v;
         delete ret.deletedAt;
-        delete ret.rating;
     }
 });
 novelChapterSchema.set("toObject", { virtuals: true });
@@ -412,7 +389,6 @@ novelChapterSchema.set("toJSON", {
         delete ret.hakoId;
         delete ret.__v;
         delete ret.deletedAt;
-        delete ret.wordCount;
     }
 });
 

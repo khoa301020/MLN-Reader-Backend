@@ -1,4 +1,4 @@
-import SystemStatus from '../models/common.model.js';
+import { SystemStatus } from '../models/common.model.js';
 
 const initStatus = () => {
     // check if novel status exists

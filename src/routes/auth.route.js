@@ -1,5 +1,5 @@
 import express from "express";
-import { GetAll, Login, Register } from "../controllers/user.controller.js";
+import { GetAll, Login, Logout, Register, Verify } from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
@@ -11,5 +11,14 @@ router.post("/register", Register);
 
 // create route to login user
 router.post("/login", Login);
+
+// create route to verify user
+router.post("/verify", Verify);
+
+// create route to logout user
+router.post("/logout", Logout);
+
+// get current user
+router.get("/me",);
 
 export default router;

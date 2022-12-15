@@ -1,14 +1,19 @@
 import _const from "../constants/const.js";
 import * as Helper from "../helper/helper.js";
-import SystemStatus from "../models/common.model.js";
+import { SystemStatus } from "../models/common.model.js";
 import { Chapter, Note, Novel, Section } from "../models/novel.model.js";
+import User from "../models/user.model.js";
 
 const GetNovelList = async (req, res) => {
-    // get only novels that are not deleted
-    Novel.find({}).exec((err, novels) => {
-        if (err) return res.error({ message: "Get novels failed", errors: err });
+    const page = req.query.page;
+    const limit = req.query.limit;
+    const sort = req.query.sort;
 
-        res.success({ message: "Get novels successfully", result: novels });
+    const select = "id title cover description rating followers statistics";
+
+    Novel.find({}).select(select).sort(_const.QUERY_SORT[sort]).skip((page - 1) * limit).limit(limit).exec((err, novels) => {
+        if (err) return res.error({ message: "Get novel list failed", errors: err });
+        res.success({ message: "Get novel list successfully", result: novels });
     });
 };
 
@@ -35,22 +40,46 @@ const GetChapter = (req, res) => {
             if (err) return res.error({ message: "Get chapter failed", errors: err });
             if (!chapter) return res.error({ message: "Chapter not found" });
 
-
             chapter.viewCount += 1;
 
             chapter.save((err, chapterSave) => {
                 if (err) console.log(err);
                 if (err) return res.error({ message: "Get chapter failed", errors: err });
-                res.success({ message: "Get chapter successfully", result: chapterSave });
 
-                // update view count
+
+                Novel.findOne({ id: chapter.novelId }).exec((err, novel) => {
+                    if (err) console.log(err);
+
+                    const current = Helper.getCurrent();
+
+                    if (novel) {
+                        novel.statistics.totalView += 1;
+                        novel.statistics.dailyView[`${current.currentDate}`] ?
+                            novel.statistics.dailyView[`${current.currentDate}`] += 1 :
+                            novel.statistics.dailyView[`${current.currentDate}`] = 1;
+                        novel.statistics.monthlyView[`${current.currentMonth}`] ?
+                            novel.statistics.monthlyView[`${current.currentMonth}`] += 1 :
+                            novel.statistics.monthlyView[`${current.currentMonth}`] = 1;
+                        novel.statistics.yearlyView[`${current.currentYear}`] ?
+                            novel.statistics.yearlyView[`${current.currentYear}`] += 1 :
+                            novel.statistics.yearlyView[`${current.currentYear}`] = 1;
+                    }
+
+                    novel.markModified('statistics');
+
+                    novel.save((err, novelSave) => {
+                        if (err) console.log(err);
+                    });
+                });
+
+                res.success({ message: "Get chapter successfully", result: chapter });
             });
         });
 };
 
 const CreateAction = (req, res) => {
     if (!req.body.subject) return res.error({ message: "Subject is required" });
-    if (!_const.NOVEL_SUBJECT.includes(req.body.subject)) return res.error({ message: "Subject is invalid" });
+    if (!_const.NOVEL_SUBJECTS.includes(req.body.subject)) return res.error({ message: "Subject is invalid" });
 
     let parentName, ParentModel, parentIdProperty, lastIdProperty, entity, prefix;
 
@@ -91,6 +120,7 @@ const CreateAction = (req, res) => {
             parentIdProperty = "sectionId";
             lastIdProperty = "lastNovelChapterId";
             entity = new Chapter({
+                novelId: req.body.novelId,
                 sectionId: req.body.sectionId,
                 hakoId: req.body.hakoId,
                 hakoUrl: req.body.hakoUrl,
@@ -118,7 +148,7 @@ const CreateAction = (req, res) => {
 
     SystemStatus.findOne({}).exec(function (err, SystemStatus) {
         if (err) return res.internal({ message: "Error occurred", errors: err });
-        if (!SystemStatus) return res.error({ message: "Novel status not found" });
+        if (!SystemStatus) return res.error({ message: "System status not found" });
         if (!ParentModel) {
 
             SystemStatus[lastIdProperty] += 1;
@@ -162,7 +192,7 @@ const CreateAction = (req, res) => {
 };
 const UpdateAction = (req, res) => {
     if (!req.body.subject) return res.error({ message: "Subject is required" });
-    if (!_const.NOVEL_SUBJECT.includes(req.body.subject)) return res.error({ message: "Subject is invalid" });
+    if (!_const.NOVEL_SUBJECTS.includes(req.body.subject)) return res.error({ message: "Subject is invalid" });
 
     let Model, data;
 
@@ -224,9 +254,9 @@ const UpdateAction = (req, res) => {
 
 const DeleteAction = (req, res) => {
     if (!req.body.type) return res.error({ message: "Type is required" });
-    if (!_const.NOVEL_SUBJECT.includes(req.body.type)) return res.error({ message: "Invalid type" });
+    if (!_const.NOVEL_SUBJECTS.includes(req.body.type)) return res.error({ message: "Invalid type" });
     if (!req.body.action) return res.error({ message: "Action is required" });
-    if (!_const.DELETE_ACTION.includes(req.body.action)) return res.error({ message: "Invalid action" });
+    if (!_const.DELETE_ACTIONS.includes(req.body.action)) return res.error({ message: "Invalid action" });
     if (!req.body.id) return res.error({ message: "ID is required" });
 
     let Model;
@@ -270,39 +300,47 @@ const DeleteAction = (req, res) => {
     });
 };
 
-const FollowNovel = (req, res) => {
+const FollowAction = (req, res) => {
+    if (!req.body.userId) return res.error({ message: "ID is required" });
     if (!req.body.novelId) return res.error({ message: "Novel ID is required" });
-    if (!req.body.userId) return res.error({ message: "Novel ID is required" });
+    if (!req.body.action) return res.error({ message: "Action is required" });
+    if (!_const.FOLLOW_ACTIONS.includes(req.body.action)) return res.error({ message: "Invalid action" });
 
-    Novel.findOne({ id: req.body.novelId }).exec(function (err, novel) {
+    User.findOne({ id: req.body.userId }).exec(function (err, user) {
         if (err) return res.internal({ message: "Error occurred", errors: err });
-        if (!novel) return res.error({ message: "Novel not found" });
+        if (!user) return res.error({ message: "User not found" });
 
-        User.findOne({ id: req.body.userId }).exec(function (err, user) {
+        Novel.findOne({ id: req.body.novelId }).exec(function (err, novel) {
             if (err) return res.internal({ message: "Error occurred", errors: err });
+            if (!novel) return res.error({ message: "Novel not found" });
 
-            if (!user) {
-                let newUser = new User({
-                    id: req.body.userId,
-                    novelFollows: [novel.id],
-                });
+            if (user.followingNovels.includes(novel.id)) {
+                if (req.body.action === "unfollow") {
+                    const novelToRemove = user.followingNovels.find(item => item.novelId === novel.id);
+                    const novelIndex = user.followingNovels.indexOf(novelToRemove);
+                    user.followingNovels.splice(itemIndex, 1);
 
-                newUser.save((err) => {
-                    if (err) return res.error({ message: "Follow failed", errors: err });
-                    res.created({ message: "Followed" });
-                });
+                    const userToRemove = novel.followers.find(item => item.userId === user.id);
+                    const userIndex = novel.followers.indexOf(userToRemove);
+                    novel.followers.splice(userIndex, 1);
+
+                    user.save((err) => {
+                        if (err) return res.error({ message: "Unfollow failed", errors: err });
+                        novel.save((err) => {
+                            if (err) return res.error({ message: "Unfollow failed", errors: err });
+                            res.success({ message: "Unfollowed" });
+                        });
+                    });
+                }
             } else {
-                if (user.novelFollows.includes(novel.id)) return res.error({ message: "Already followed" });
-
-                user.novelFollows.push(novel.id);
-                user.save((err) => {
-                    if (err) return res.error({ message: "Follow failed", errors: err });
-                    res.created({ message: "Followed" });
-                });
+                if (req.body.action === "follow") {
+                    user.followingNovels.push({ novelId: novel.id });
+                    novel.followers.push({ userId: user.id });
+                }
             }
         });
     });
 };
 
-export { GetNovelList, GetNovel, GetChapter, CreateAction, UpdateAction, DeleteAction };
+export { GetNovelList, GetNovel, GetChapter, CreateAction, UpdateAction, DeleteAction, FollowAction };
 

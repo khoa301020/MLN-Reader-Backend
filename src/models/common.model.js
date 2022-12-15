@@ -42,8 +42,70 @@ const systemStatusSchema = new mongoose.Schema({
         required: true,
         default: 0,
     },
+    lastCommentId: {
+        type: Number,
+        required: true,
+        default: 0,
+    },
 });
+
+const CommentSchema = new mongoose.Schema({
+    id: {
+        type: String,
+        unique: true,
+        required: true,
+    },
+    targetId: {
+        type: String,
+        required: true,
+    },
+    userId: {
+        type: String,
+        required: true,
+    },
+    content: {
+        type: String,
+        required: true,
+    },
+    createdAt: {
+        type: Date,
+        required: true,
+        default: Date.now,
+    },
+    updatedAt: {
+        type: Date,
+        required: true,
+        default: Date.now,
+    },
+    deletedAt: {
+        type: Date,
+        required: false,
+        default: null,
+    },
+    history: {
+        _id: false,
+        type: [{
+            content: {
+                type: String,
+                required: true,
+            },
+            createdAt: {
+                type: Date,
+                required: true,
+                default: Date.now,
+            },
+            modifiedAt: {
+                type: Date,
+                required: true,
+                default: Date.now,
+            },
+        }],
+        required: false,
+    },
+});
+
+const Comment = mongoose.model('Comment', CommentSchema, 'comments');
 
 const SystemStatus = mongoose.model('SystemStatus', systemStatusSchema, 'systemStatus');
 
-export default SystemStatus;
+export { SystemStatus, Comment };

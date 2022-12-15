@@ -1,5 +1,5 @@
 import express from "express";
-import { CreateAction, DeleteAction, GetChapter, GetNovel, GetNovelList, UpdateAction } from "../controllers/novel.controller.js";
+import { CreateAction, DeleteAction, FollowAction, GetChapter, GetNovel, GetNovelList, UpdateAction } from "../controllers/novel.controller.js";
 
 const router = express.Router();
 
@@ -20,5 +20,8 @@ router.post("/update-action", UpdateAction);
 
 // delete action
 router.post("/delete-action", DeleteAction);
+
+// follow action
+router.post("/follow-action", FollowAction);
 
 export default router;

@@ -1,7 +1,23 @@
+import { getCurrent } from "../helper/helper.js";
+
 const Const = Object.freeze({
-    NOVEL_SUBJECT: ['novel', 'section', 'chapter', 'note'],
-    MANGA_SUBJECT: ['manga', 'section', 'chapter'],
-    DELETE_ACTION: ['delete', 'restore'],
+    NOVEL_SUBJECTS: ['novel', 'section', 'chapter', 'note'],
+    MANGA_SUBJECTS: ['manga', 'section', 'chapter'],
+    DELETE_ACTIONS: ['delete', 'restore'],
+    FOLLOW_ACTIONS: ['follow', 'unfollow'],
+    COMMENT_ACTIONS: ['comment', 'modify', 'delete'],
+
+    QUERY_SORT: {
+        newest: { createdAt: -1 },
+        oldest: { createdAt: 1 },
+        lastUpdate: { lastUpdate: -1 },
+        topViewTotal: { "statistics.totalView": -1 },
+        topViewDaily: { [`statistics.dailyView.${getCurrent().currentDate}`]: -1 },
+        topViewMonthly: { [`statistics.monthlyView.${getCurrent().currentMonth}`]: -1 },
+        topViewYearly: { [`statistics.yearlyView.${getCurrent().currentYear}`]: -1 },
+        topFollow: { "followersCount": -1 },
+        topRating: { "ratingSum": -1 },
+    },
 
     PAGINATE: 20,
     CURRENT_PAGE: 1,

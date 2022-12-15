@@ -97,7 +97,7 @@ const customResponse = (req, res, next) => {
      * Custom error response
      */
     res.error = function ({ errors = {}, code = _const.HTTP_BAD_REQUEST, message = "", result = {} }) {
-        if (errors.code && errors.code in _const.MONGO_ERROR_CODES)
+        if (errors?.code && errors.code in _const.MONGO_ERROR_CODES)
             message = _const.MONGO_ERROR_CODES[errors.code]
 
         return res.status(code).json(removeEmpty({
