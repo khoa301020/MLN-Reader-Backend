@@ -104,8 +104,31 @@ const CommentSchema = new mongoose.Schema({
     },
 });
 
-const Comment = mongoose.model('Comment', CommentSchema, 'comments');
+const TagSchema = new mongoose.Schema({
+    code: {
+        type: String,
+        unique: true,
+        required: true,
+    },
+    name: {
+        type: String,
+        required: true,
+    },
+    type: {
+        type: String,
+        required: true,
+        default: 'both',
+        enum: ['novel', 'manga', 'both'],
+    },
+    createdAt: {
+        type: Date,
+        required: true,
+        default: Date.now,
+    },
+});
 
+const Comment = mongoose.model('Comment', CommentSchema, 'comments');
+const Tag = mongoose.model('Tag', TagSchema, 'tags');
 const SystemStatus = mongoose.model('SystemStatus', systemStatusSchema, 'systemStatus');
 
-export { SystemStatus, Comment };
+export { SystemStatus, Comment, Tag };

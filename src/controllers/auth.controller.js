@@ -75,6 +75,8 @@ const Login = (req, res) => {
             httpOnly: false,
             withCredentials: true,
             maxAge: 1000 * 60 * 60 * 24 * 365,
+            sameSite: "none",
+            secure: true,
         });
 
         return res.success({

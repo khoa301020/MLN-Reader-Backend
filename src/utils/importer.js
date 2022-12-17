@@ -98,4 +98,46 @@ async function importAll() {
     });
 }
 
-await importAll();
+// await importAll();
+
+async function importTags() {
+    const baseUrl = "http://localhost:3333/api/common/tag-action";
+    const jsonsInDir = fs.readdirSync('./crawler/data').filter(file => path.extname(file) === '.json');
+
+    const tags = [];
+
+    for (const file of jsonsInDir) {
+        const fileData = fs.readFileSync(path.join('./crawler/data', file), 'utf8');
+        const novel = JSON.parse(fileData.toString());
+
+        for (const tag of novel.info.tags) {
+            if (!tags.some(e => e.code === tag.code)) {
+                tags.push({ name: tag.name, code: tag.code });
+            }
+        }
+    }
+
+    tags.sort((a, b) => b.code - a.code);
+
+    fs.writeFileSync('./crawler/tags.json', JSON.stringify(tags, null, 4));
+
+    const promises = [];
+    for (const tag of tags) {
+        const create = await axios.post(baseUrl, {
+            action: "create",
+            name: tag.name,
+            code: tag.code,
+        }).then(res => {
+            console.log(res.data.result);
+        }).catch(err => {
+            console.log(err.message);
+        });
+        promises.push(await timer(1000).then(() => create));
+    }
+    Promise.all(promises).then(() => {
+        console.log("Done!");
+        return;
+    });
+}
+
+await importTags();

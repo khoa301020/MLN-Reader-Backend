@@ -74,6 +74,6 @@ const CommentAction = (req, res) => {
             });
         });
     }
-}
+};
 
 export { CommentAction };

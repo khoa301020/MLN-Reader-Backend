@@ -1,5 +1,10 @@
 import express from "express";
+import multer from "multer";
+
 import { CreateAction, DeleteAction, FollowAction, GetChapter, GetNovel, GetNovelList, UpdateAction } from "../controllers/novel.controller.js";
+
+const upload = multer({ storage: multer.memoryStorage() }).single('cover');
+
 
 const router = express.Router();
 
@@ -13,7 +18,7 @@ router.get("/get-novel", GetNovel);
 router.get("/get-chapter", GetChapter);
 
 // create action
-router.post("/create-action", CreateAction);
+router.post("/create-action", upload, CreateAction);
 
 // update action
 router.post("/update-action", UpdateAction);

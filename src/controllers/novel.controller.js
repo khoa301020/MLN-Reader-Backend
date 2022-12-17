@@ -1,5 +1,7 @@
+import path from 'path';
 import _const from "../constants/const.js";
 import * as Helper from "../helper/helper.js";
+import bucket from '../libs/GCP-Storage.js';
 import { SystemStatus } from "../models/common.model.js";
 import { Chapter, Note, Novel, Section } from "../models/novel.model.js";
 import User from "../models/user.model.js";
@@ -83,6 +85,8 @@ const CreateAction = (req, res) => {
 
     let parentName, ParentModel, parentIdProperty, lastIdProperty, entity, prefix;
 
+    console.log(req.body.tags);
+
     switch (req.body.subject) {
         case 'novel':
             lastIdProperty = "lastNovelId";
@@ -94,10 +98,10 @@ const CreateAction = (req, res) => {
                 author: req.body.author,
                 artist: req.body.artist,
                 status: req.body.status,
-                otherNames: req.body.otherNames,
+                otherNames: req.body.otherNames ? JSON.parse(req.body.otherNames) : [],
                 description: req.body.description,
                 uploader: req.body.uploader,
-                tags: req.body.tags,
+                tags: JSON.parse(req.body.tags),
             });
             prefix = "novel_";
             break;
@@ -150,11 +154,25 @@ const CreateAction = (req, res) => {
         if (err) return res.internal({ message: "Error occurred", errors: err });
         if (!SystemStatus) return res.error({ message: "System status not found" });
         if (!ParentModel) {
-
             SystemStatus[lastIdProperty] += 1;
 
             const target = entity;
             target.id = prefix + SystemStatus[lastIdProperty];
+
+            if (req.file) {
+                const filePath = `novel/${target.id}/cover${path.extname(req.file.originalname)}`
+                bucket.file(filePath)
+                    .save(req.file.buffer, {
+                        metadata: {
+                            contentType: req.file.mimetype,
+                        },
+                    }, (err) => {
+                        if (err) return console.log(err);
+                    });
+                target.cover = process.env.GCP_STORAGE_URL + filePath;
+            } else {
+                target.cover = process.env.HAKO_DEFAULT_COVER;
+            }
 
             target.save((err) => {
                 if (err) return res.error({ message: `Create ${req.body.subject} failed`, errors: err });
@@ -172,6 +190,22 @@ const CreateAction = (req, res) => {
 
                 const target = entity;
                 target.id = prefix + SystemStatus[lastIdProperty];
+
+                if (req.file && req.body.subject === "section") {
+                    const filePath = `novel/${parent.novelId}/${target.id}/cover${path.extname(req.file.originalname)}`
+
+                    bucket.file(filePath)
+                        .save(req.file.buffer, {
+                            metadata: {
+                                contentType: req.file.mimetype,
+                            },
+                        }, (err) => {
+                            if (err) return console.log(err);
+                        });
+                    target.cover = process.env.GCP_STORAGE_URL + filePath;
+                } else {
+                    target.cover = process.env.HAKO_DEFAULT_COVER;
+                }
 
                 if (!parent[`${req.body.subject}s`]) return res.internal({ message: `${Helper.capitalizeFirstLetter(parentName)} ${req.body.subject}s not found` });
                 parent[`${req.body.subject}s`].push(target._id);

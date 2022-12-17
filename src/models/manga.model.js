@@ -131,17 +131,7 @@ const mangaSchema = new mongoose.Schema({
     },
 
     uploader: {
-        _id: false,
-        type: {
-            userId: {
-                type: String,
-                required: true,
-            },
-            userName: {
-                type: String,
-                required: true,
-            },
-        },
+        type: String,
         required: true,
     },
 

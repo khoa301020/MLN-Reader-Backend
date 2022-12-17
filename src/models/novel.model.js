@@ -164,7 +164,6 @@ const novelSchema = new mongoose.Schema({
     },
     hakoId: {
         type: String,
-        unique: true,
         required: false,
     },
     hakoUrl: {
@@ -204,17 +203,7 @@ const novelSchema = new mongoose.Schema({
     },
 
     uploader: {
-        _id: false,
-        type: {
-            userId: {
-                type: String,
-                required: true,
-            },
-            userName: {
-                type: String,
-                required: true,
-            },
-        },
+        type: String,
         required: true,
     },
 
