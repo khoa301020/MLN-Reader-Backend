@@ -14,11 +14,12 @@ import requestTime from "../middlewares/requestTime.js";
 // init
 const app = express();
 
+const frontendUrl = process.env.REACT_APP_GCP_FRONTEND ? process.env.REACT_APP_GCP_FRONTEND : process.env.REACT_APP_LOCAL_FRONTEND;
 
 // middlewares
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(cors({ credentials: true, origin: process.env.REACT_APP_FRONTEND_URL }));
+app.use(cors({ credentials: true, origin: frontendUrl }));
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(requestTime);
