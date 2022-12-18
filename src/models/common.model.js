@@ -63,6 +63,14 @@ const CommentSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    userName: {
+        type: String,
+        required: true,
+    },
+    userAvatar: {
+        type: String,
+        required: true,
+    },
     content: {
         type: String,
         required: true,

@@ -38,9 +38,12 @@ const GetChapter = (req, res) => {
     if (!req.query.chapterId) return res.error({ message: "Chapter id is required" });
 
     Chapter.findOne({ id: req.query.chapterId })
-        .populate({ path: 'notes' }).exec((err, chapter) => {
+        .populate({ path: 'notes' }).exec(async (err, chapter) => {
             if (err) return res.error({ message: "Get chapter failed", errors: err });
             if (!chapter) return res.error({ message: "Chapter not found" });
+
+            const sectionTitle = Section.findOne({ id: chapter.sectionId }).select('name').exec((err, section) => { return section.name; });
+            console.log(sectionTitle);
 
             chapter.viewCount += 1;
 
@@ -72,9 +75,18 @@ const GetChapter = (req, res) => {
                     novel.save((err, novelSave) => {
                         if (err) console.log(err);
                     });
+
+                    res.success({
+                        message: "Get chapter successfully",
+                        result: {
+                            chapter: chapterSave,
+                            novelTitle: novel.title,
+                            novelCover: novel.cover,
+                            sectionTitle: sectionTitle,
+                        }
+                    });
                 });
 
-                res.success({ message: "Get chapter successfully", result: chapter });
             });
         });
 };
@@ -376,5 +388,62 @@ const FollowAction = (req, res) => {
     });
 };
 
-export { GetNovelList, GetNovel, GetChapter, CreateAction, UpdateAction, DeleteAction, FollowAction };
+const AddHistory = (req, res) => {
+    if (!req.body.username) return res.error({ message: "Username is required" });
+    if (!req.body.novelId) return res.error({ message: "Novel ID is required" });
+    if (!req.body.chapterId) return res.error({ message: "Chapter ID is required" });
+
+    User.findOne({ name: req.body.username }).exec(function (err, user) {
+        if (err) return res.internal({ message: "Error occurred", errors: err });
+        if (!user) return res.error({ message: "User not found" });
+
+        const newHistory = {
+            novelId: req.body.novelId,
+            novelTitle: req.body.novelTitle,
+            novelCover: req.body.novelCover,
+            chapterId: req.body.chapterId,
+            chapterTitle: req.body.chapterTitle,
+        }
+
+        let checkExist = false;
+
+        // Check if novel is already in history
+        for (let history of user.novelHistory) {
+            if (history.novelId === req.body.novelId) {
+                checkExist = true;
+                // Only update chapter if it's different
+                if (history.chapterId !== req.body.chapterId) {
+                    history.chapterId = req.body.chapterId;
+                    history.chapterTitle = req.body.chapterTitle;
+                } else {
+                    return res.success({ message: "History already exists" });
+                }
+            }
+        };
+
+        if (!checkExist) {
+            user.novelHistory.push(newHistory);
+        }
+
+        user.markModified("novelHistory");
+
+        user.save((err) => {
+            if (err) return res.error({ message: "Add history failed", errors: err });
+            res.success({ message: "History added" });
+        });
+    });
+};
+
+const GetHistory = (req, res) => {
+    if (!req.query.username) return res.error({ message: "Username is required" });
+
+    User.findOne({ name: req.query.username }).exec(function (err, user) {
+        if (err) return res.internal({ message: "Error occurred", errors: err });
+        if (!user) return res.error({ message: "User not found" });
+
+        res.success({ message: "History found", result: user.novelHistory.slice(0, 10) });
+    });
+};
+
+export { GetNovelList, GetNovel, GetChapter, CreateAction, UpdateAction, DeleteAction, FollowAction, AddHistory, GetHistory };
 

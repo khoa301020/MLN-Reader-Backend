@@ -20,6 +20,8 @@ const Register = (req, res) => {
 
         systemStatus.lastUserId += 1;
 
+        const prefix = "user_";
+
         User.findOne({
             $or: [
                 { email: req.body.email },
@@ -30,7 +32,7 @@ const Register = (req, res) => {
             if (user) return res.error({ message: "Username or email already exists", errors: err });
 
             const newUser = new User({
-                id: systemStatus.lastUserId,
+                id: prefix + systemStatus.lastUserId,
                 name: req.body.name,
                 email: req.body.email,
                 password: req.body.password,

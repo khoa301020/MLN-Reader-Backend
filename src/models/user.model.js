@@ -17,6 +17,12 @@ const userSchema = new mongoose.Schema({
         required: true,
         trim: true,
     },
+    avatar: {
+        type: String,
+        required: false,
+        trim: true,
+        default: null,
+    },
     email: {
         type: String,
         required: true,
@@ -135,7 +141,19 @@ const userSchema = new mongoose.Schema({
                 unique: true,
                 required: true,
             },
+            novelCover: {
+                type: String,
+                required: true,
+            },
+            novelTitle: {
+                type: String,
+                required: true,
+            },
             chapterId: {
+                type: String,
+                required: true,
+            },
+            chapterTitle: {
                 type: String,
                 required: true,
             },
@@ -155,7 +173,19 @@ const userSchema = new mongoose.Schema({
                 unique: true,
                 required: true,
             },
+            mangaCover: {
+                type: String,
+                required: true,
+            },
+            mangaTitle: {
+                type: String,
+                required: true,
+            },
             chapterId: {
+                type: String,
+                required: true,
+            },
+            chapterTitle: {
                 type: String,
                 required: true,
             },

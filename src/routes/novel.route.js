@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 
-import { CreateAction, DeleteAction, FollowAction, GetChapter, GetNovel, GetNovelList, UpdateAction } from "../controllers/novel.controller.js";
+import { AddHistory, CreateAction, DeleteAction, FollowAction, GetChapter, GetHistory, GetNovel, GetNovelList, UpdateAction } from "../controllers/novel.controller.js";
 
 const upload = multer({ storage: multer.memoryStorage() }).single('cover');
 
@@ -28,5 +28,11 @@ router.post("/delete-action", DeleteAction);
 
 // follow action
 router.post("/follow-action", FollowAction);
+
+// add history
+router.post("/add-history", AddHistory);
+
+// get history
+router.get("/get-history", GetHistory);
 
 export default router;
