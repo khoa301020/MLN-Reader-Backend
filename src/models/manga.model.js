@@ -19,7 +19,21 @@ const mangaChapterSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    pages: [String],
+    pages: [{
+        type: {
+            _id: false,
+            pageNumber: {
+                type: Number,
+                required: true,
+            },
+            pageUrl: {
+                type: String,
+                required: true,
+            },
+        },
+        required: true,
+        default: [],
+    }],
     viewCount: {
         type: Number,
         required: true,
@@ -190,7 +204,7 @@ const mangaSchema = new mongoose.Schema({
 
     sections: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: "NovelSection",
+        ref: "MangaSection",
         required: true,
         default: [],
     }],
@@ -208,52 +222,19 @@ const mangaSchema = new mongoose.Schema({
             default: 0,
         },
         dailyView: {
-            _id: false,
-            type: [{
-                date: {
-                    type: String,
-                    required: true,
-                },
-                views: {
-                    type: Number,
-                    required: true,
-                    default: 0,
-                },
-            }],
-            required: true,
-            default: [],
+            type: Object,
+            required: false,
+            default: {},
         },
         monthlyView: {
-            _id: false,
-            type: [{
-                month: {
-                    type: String,
-                    required: true,
-                },
-                views: {
-                    type: Number,
-                    required: true,
-                    default: 0,
-                },
-            }],
-            required: true,
-            default: [],
+            type: Object,
+            required: false,
+            default: {},
         },
         yearlyView: {
-            _id: false,
-            type: [{
-                year: {
-                    type: String,
-                    required: true,
-                },
-                views: {
-                    type: Number,
-                    required: true,
-                    default: 0,
-                },
-            }],
-            required: true,
-            default: [],
+            type: Object,
+            required: false,
+            default: {},
         },
     },
     createdAt: {

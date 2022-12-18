@@ -1,17 +1,8 @@
 import express from "express";
 import multer from 'multer';
-import path from 'path';
-import { CreateAction, GetManga, GetMangaList, UploadChapter } from "../controllers/manga.controller.js";
+import { AddHistory, CreateChapter, CreateManga, CreateSection, GetChapter, GetHistory, GetManga, GetMangaList } from "../controllers/manga.controller.js";
 
-var storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/')
-    },
-    filename: function (req, file, cb) {
-        cb(null, req.body.manga_id + '_' + req.body.chapter_order + '_' + Date.now() + path.extname(file.originalname)) //Appending extension
-    }
-})
-var upload = multer({ storage: storage }).single('file');
+const chapterupload = multer({ storage: multer.memoryStorage() }).single('chapter');
 
 const coverupload = multer({ storage: multer.memoryStorage() }).single('cover');
 
@@ -23,10 +14,22 @@ router.get("/get-list", GetMangaList);
 // get manga
 router.get("/get-manga", GetManga);
 
+// get chapter
+router.get("/get-chapter", GetChapter);
+
 // create manga
-router.post("/create-action", coverupload, CreateAction);
+router.post("/create-manga", coverupload, CreateManga);
+
+// create section
+router.post("/create-section", coverupload, CreateSection);
 
 // upload chapter
-router.post("/upload", upload, UploadChapter);
+router.post("/create-chapter", chapterupload, CreateChapter);
+
+// add history
+router.post("/add-history", AddHistory);
+
+// get history
+router.get("/get-history", GetHistory);
 
 export default router;

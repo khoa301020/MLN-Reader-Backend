@@ -1,12 +1,12 @@
-import fs from 'fs';
 import JSZip from 'jszip';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import _const from '../constants/const.js';
-import * as Helper from '../helper/helper.js';
+import * as Helper from "../helper/helper.js";
 import bucket from '../libs/GCP-Storage.js';
 import { SystemStatus } from '../models/common.model.js';
 import { Chapter, Manga, Section } from '../models/manga.model.js';
+import User from '../models/user.model.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,6 +21,61 @@ const GetMangaList = async (req, res) => {
     Manga.find({}).select(select).sort(_const.QUERY_SORT[sort]).skip((page - 1) * limit).limit(limit).exec((err, mangas) => {
         if (err) return res.error({ message: "Get manga list failed", errors: err });
         res.success({ message: "Get manga list successfully", result: mangas });
+    });
+};
+
+const GetChapter = (req, res) => {
+    if (!req.query.chapterId) return res.error({ message: "Chapter id is required" });
+
+    Chapter.findOne({ id: req.query.chapterId }).exec(async (err, chapter) => {
+        if (err) return res.error({ message: "Get chapter failed", errors: err });
+        if (!chapter) return res.error({ message: "Chapter not found" });
+
+        const sectionTitle = Section.findOne({ id: chapter.sectionId }).select('name').exec((err, section) => { return section.name; });
+        console.log(sectionTitle);
+
+        chapter.viewCount += 1;
+
+        chapter.save((err, chapterSave) => {
+            if (err) console.log(err);
+            if (err) return res.error({ message: "Get chapter failed", errors: err });
+
+            Manga.findOne({ id: chapter.mangaId }).exec((err, manga) => {
+                if (err) console.log(err);
+
+                const current = Helper.getCurrent();
+
+                if (manga) {
+                    manga.statistics.totalView += 1;
+                    manga.statistics.dailyView[`${current.currentDate}`] ?
+                        manga.statistics.dailyView[`${current.currentDate}`] += 1 :
+                        manga.statistics.dailyView[`${current.currentDate}`] = 1;
+                    manga.statistics.monthlyView[`${current.currentMonth}`] ?
+                        manga.statistics.monthlyView[`${current.currentMonth}`] += 1 :
+                        manga.statistics.monthlyView[`${current.currentMonth}`] = 1;
+                    manga.statistics.yearlyView[`${current.currentYear}`] ?
+                        manga.statistics.yearlyView[`${current.currentYear}`] += 1 :
+                        manga.statistics.yearlyView[`${current.currentYear}`] = 1;
+                }
+
+                manga.markModified('statistics');
+
+                manga.save((err, mangaSave) => {
+                    if (err) console.log(err);
+                });
+
+                res.success({
+                    message: "Get chapter successfully",
+                    result: {
+                        chapter: chapterSave,
+                        mangaTitle: manga.title,
+                        mangaCover: manga.cover,
+                        sectionTitle: sectionTitle,
+                    }
+                });
+            });
+
+        });
     });
 };
 
@@ -39,74 +94,69 @@ const GetManga = (req, res) => {
         });
 };
 
-const CreateAction = (req, res) => {
-    if (!req.body.subject) return res.error({ message: "Subject is required" });
-    if (!_const.MANGA_SUBJECTS.includes(req.body.subject)) return res.error({ message: "Subject is invalid" });
-
-    let parentName, ParentModel, parentIdProperty, lastIdProperty, entity, prefix;
-
-    console.log(req.body.tags);
-
-    switch (req.body.subject) {
-        case 'manga':
-            lastIdProperty = "lastMangaId";
-            entity = new Manga({
-                title: req.body.title,
-                cover: req.body.cover,
-                author: req.body.author,
-                artist: req.body.artist,
-                status: req.body.status,
-                otherNames: req.body.otherNames ? JSON.parse(req.body.otherNames) : [],
-                description: req.body.description,
-                uploader: req.body.uploader,
-                tags: JSON.parse(req.body.tags),
-            });
-            prefix = "manga_";
-            break;
-        case 'section':
-            parentName = "manga";
-            ParentModel = Manga;
-            parentIdProperty = "mangaId";
-            lastIdProperty = "lastMangaSectionId";
-            entity = new Section({
-                mangaId: req.body.mangaId,
-                hakoId: req.body.hakoId,
-                cover: req.body.cover,
-                name: req.body.name,
-            });
-            prefix = "volume_n";
-            break;
-        case 'chapter':
-            parentName = "section";
-            ParentModel = Section;
-            parentIdProperty = "sectionId";
-            lastIdProperty = "lastMangaChapterId";
-            entity = new Chapter({
-                mangaId: req.body.mangaId,
-                sectionId: req.body.sectionId,
-                hakoId: req.body.hakoId,
-                hakoUrl: req.body.hakoUrl,
-                title: req.body.title,
-                content: req.body.content,
-                wordCount: req.body.wordCount,
-            });
-            prefix = "chapter_n";
-            break;
-        default:
-            return res.error({ message: "Subject is invalid" });
-    }
-
+const CreateManga = (req, res) => {
     SystemStatus.findOne({}).exec(function (err, SystemStatus) {
         if (err) return res.internal({ message: "Error occurred", errors: err });
         if (!SystemStatus) return res.error({ message: "System status not found" });
-        if (!ParentModel) {
-            SystemStatus[lastIdProperty] += 1;
 
-            const target = entity;
-            target.id = prefix + SystemStatus[lastIdProperty];
+        SystemStatus.lastMangaId += 1;
+
+        let manga = new Manga({
+            id: "manga_" + SystemStatus.lastMangaId,
+            title: req.body.title,
+            author: req.body.author,
+            artist: req.body.artist,
+            status: req.body.status,
+            otherNames: req.body.otherNames ? JSON.parse(req.body.otherNames) : [],
+            description: req.body.description,
+            uploader: req.body.uploader,
+            tags: JSON.parse(req.body.tags),
+        });
+
+        if (req.file) {
+            const filePath = `manga/${manga.id}/cover${path.extname(req.file.originalname)}`
+            bucket.file(filePath)
+                .save(req.file.buffer, {
+                    metadata: {
+                        contentType: req.file.mimetype,
+                    },
+                }, (err) => {
+                    if (err) return console.log(err);
+                });
+            manga.cover = process.env.GCP_STORAGE_URL + filePath;
+        } else {
+            manga.cover = process.env.HAKO_DEFAULT_COVER;
+        }
+
+        manga.save((err) => {
+            if (err) return res.error({ message: `Create manga failed`, errors: err });
+            SystemStatus.save((err) => {
+                if (err) return res(err);
+                res.created({ message: `Manga ${manga.id} created!`, result: manga });
+            });
+        });
+    });
+}
+
+const CreateSection = (req, res) => {
+    SystemStatus.findOne({}).exec(function (err, SystemStatus) {
+        if (err) return res.internal({ message: "Error occurred", errors: err });
+        if (!SystemStatus) return res.error({ message: "System status not found" });
+        Manga.findOne({ id: req.body.mangaId }).populate("sections", "id").exec(function (err, manga) {
+            if (err) return res.internal({ message: "Error occurred", errors: err });
+            if (!manga) return res.error({ message: `Manga not found` });
+
+            SystemStatus.lastMangaSectionId += 1;
+
+            let section = new Section({
+                id: "volume_m" + SystemStatus.lastMangaSectionId,
+                mangaId: req.body.mangaId,
+                name: req.body.name,
+            })
 
             if (req.file) {
-                const filePath = `manga/${target.id}/cover${path.extname(req.file.originalname)}`
+                const filePath = `manga/${manga.id}/${section.id}_cover${path.extname(req.file.originalname)}`
+
                 bucket.file(filePath)
                     .save(req.file.buffer, {
                         metadata: {
@@ -115,142 +165,173 @@ const CreateAction = (req, res) => {
                     }, (err) => {
                         if (err) return console.log(err);
                     });
-                target.cover = process.env.GCP_STORAGE_URL + filePath;
+                section.cover = process.env.GCP_STORAGE_URL + filePath;
             } else {
-                target.cover = process.env.HAKO_DEFAULT_COVER;
+                section.cover = process.env.HAKO_DEFAULT_COVER;
             }
 
-            target.save((err) => {
-                if (err) return res.error({ message: `Create ${req.body.subject} failed`, errors: err });
-                SystemStatus.save((err) => {
-                    if (err) return res(err);
-                    res.created({ message: `${Helper.capitalizeFirstLetter(req.body.subject)} ${target.id} created!`, result: target });
-                });
-            });
-        } else {
-            ParentModel.findOne({ id: req.body[parentIdProperty], }).populate(`${req.body.subject}s`, "id").exec(function (err, parent) {
-                if (err) return res.internal({ message: "Error occurred", errors: err });
-                if (!parent) return res.error({ message: `${Helper.capitalizeFirstLetter(parentName)} not found` });
+            if (!manga.sections) return res.internal({ message: `Manga sections not found` });
+            manga.sections.push(section._id);
 
-                SystemStatus[lastIdProperty] += 1;
+            manga.markModified('sections');
 
-                const target = entity;
-                target.id = prefix + SystemStatus[lastIdProperty];
-
-                if (req.file && req.body.subject === "section") {
-                    const filePath = `manga/${parent.mangaId}/${target.id}/cover${path.extname(req.file.originalname)}`
-
-                    bucket.file(filePath)
-                        .save(req.file.buffer, {
-                            metadata: {
-                                contentType: req.file.mimetype,
-                            },
-                        }, (err) => {
-                            if (err) return console.log(err);
-                        });
-                    target.cover = process.env.GCP_STORAGE_URL + filePath;
-                } else {
-                    target.cover = process.env.HAKO_DEFAULT_COVER;
-                }
-
-                if (!parent[`${req.body.subject}s`]) return res.internal({ message: `${Helper.capitalizeFirstLetter(parentName)} ${req.body.subject}s not found` });
-                parent[`${req.body.subject}s`].push(target._id);
-
-                target.save((err) => {
-                    if (err) return res.error({ message: `Create ${req.body.subject} failed`, errors: err });
-                    parent.save((err) => {
-                        if (err) return res.error({ message: `Add ${req.body.subject} to ${parentName} failed`, errors: err });
-                        SystemStatus.save((err) => {
-                            if (err) return res.error({ message: "Update manga status failed", errors: err });
-                            res.created({ message: `${Helper.capitalizeFirstLetter(req.body.subject)} ${target.id} created!`, result: target });
-                        });
+            section.save((err) => {
+                if (err) return res.error({ message: `Create section failed`, errors: err });
+                manga.save((err) => {
+                    if (err) return res.error({ message: `Add section to manga failed`, errors: err });
+                    SystemStatus.save((err) => {
+                        if (err) return res.error({ message: "Update manga status failed", errors: err });
+                        res.created({ message: `Section ${section.id} created!`, result: section });
                     });
                 });
             });
-        }
-    })
-};
+        });
+    });
+}
 
-const UploadChapter = (req, res) => {
+const CreateChapter = (req, res) => {
     if (path.extname(req.file.originalname) !== '.zip') {
-        fs.unlinkSync(req.file.path);
         return res.status(400).json({ error: 'File must be a zip file' })
     };
 
-    try {
-        const filePath = path.join(__dirname, '../../') + req.file.path;
-        fs.readFile(filePath, function (_err, data) {
-            JSZip.loadAsync(data).then(function (zip) {
-                // check if folder exists in zip
-                if (zip.folder(/(.*\/)/).length > 0) {
-                    console.log(zip.folder(/(.*\/)/));
-                    throw new Error('Zip file contains a directory');
-                }
-                // check if zip files contain a string file name
-                if (zip.file(/([^\d]+)\..*/).length > 0) {
-                    console.log(zip.file(/^\d$/));
-                    throw new Error('Zip file contains a non-number name');
-                }
-                let listPages = [];
-                let listPromises = [];
-                zip.file(/.*/).map(function (zipEntry) {
-                    // extract image with binary data
-                    const buffer = zipEntry.async('arraybuffer');
-                    const setParams = buffer.then(async function (content) {
-                        return {
-                            Path: req.body.manga_id + '/' + req.body.chapter_order + '/' + zipEntry.name,
-                            Data: Buffer.from(content),
-                        }
+    SystemStatus.findOne({}).exec(function (err, SystemStatus) {
+        if (err) return res.internal({ message: "Error occurred", errors: err });
+        if (!SystemStatus) return res.error({ message: "System status not found" });
+
+        SystemStatus.lastMangaChapterId += 1;
+
+        let chapter = new Chapter({
+            id: "chapter_m" + SystemStatus.lastMangaChapterId,
+            mangaId: req.body.mangaId,
+            sectionId: req.body.sectionId,
+            name: req.body.name,
+            title: req.body.title,
+        });
+
+        JSZip.loadAsync(req.file.buffer).then(function (zip) {
+            // check if folder exists in zip
+            if (zip.folder(/(.*\/)/).length > 0) {
+                console.log(zip.folder(/(.*\/)/));
+                throw new Error('Zip file contains a directory');
+            }
+            // check if zip files contain a string file name
+            if (zip.file(/([^\d]+)\..*/).length > 0) {
+                console.log(zip.file(/^\d$/));
+                throw new Error('Zip file contains a non-number name');
+            }
+            let listPages = [];
+            let listPromises = [];
+            zip.file(/.*/).map(function (zipEntry) {
+                // extract image with binary data
+                const buffer = zipEntry.async('arraybuffer');
+                const setParams = buffer.then(async function (content) {
+                    return {
+                        Path: `manga/${req.body.mangaId}/${req.body.sectionId}/${chapter.id}/${zipEntry.name}`,
+                        Data: Buffer.from(content),
+                    }
+                });
+                const upload = setParams.then(async function (params) {
+                    return await bucket.file(params.Path).save(params.Data).then(() => {
+                        listPages.push({
+                            pageNumber: zipEntry.name.replace(/\.[^.]+$/, ''),
+                            pageUrl: process.env.GCP_STORAGE_URL + params.Path,
+                        });
                     });
-                    const upload = setParams.then(async function (params) {
-                        return await bucket.file(params.Path).save(params.Data).then(() => {
-                            listPages.push({
-                                pageNumber: zipEntry.name.replace(/\.[^.]+$/, ''),
-                                image: process.env.GCP_STORAGE_URL + params.Path,
+                });
+                listPromises.push(upload);
+            });
+
+            // wait for all promises to resolve
+            Promise.all(listPromises).then(() => {
+                listPages.sort((a, b) => { return a.pageNumber - b.pageNumber });
+                chapter.pages = listPages;
+                // update manga
+                Manga.findOne({ id: req.body.mangaId }).exec(function (err, manga) {
+                    if (err) return res.internal({ message: "Error occurred", errors: err });
+                    if (!manga) return res.error({ message: `Manga not found` });
+                    // update section
+                    Section.findOne({ id: req.body.sectionId }).populate("chapters", "id").exec(function (err, section) {
+                        if (err) return res.internal({ message: "Error occurred", errors: err });
+                        if (!section) return res.error({ message: `Section not found` });
+
+                        if (!section.chapters) return res.internal({ message: `Section chapters not found` });
+                        section.chapters.push(chapter._id);
+
+                        section.markModified('chapters');
+
+                        chapter.save((err) => {
+                            if (err) return res.error({ message: `Create chapter failed`, errors: err });
+                            section.save((err) => {
+                                if (err) return res.error({ message: `Add chapter to section failed`, errors: err });
+                                SystemStatus.save((err) => {
+                                    if (err) return res.error({ message: "Update manga status failed", errors: err });
+                                    res.created({ message: `Chapter ${chapter.id} created!`, result: chapter });
+                                });
                             });
                         });
                     });
-                    listPromises.push(upload);
-                });
-
-                // wait for all promises to resolve
-                Promise.all(listPromises).then(() => {
-                    // update manga
-                    Manga.findOneAndUpdate(
-                        { id: req.body.manga_id },
-                        {
-                            $push: {
-                                chapters: {
-                                    chapterOrder: req.body.chapter_order,
-                                    chapterTitle: req.body.chapter_title,
-                                    pages: listPages
-                                }
-                            }
-                        },
-                        { new: true },
-                        (err, manga) => {
-                            if (err) {
-                                res.status(400).send(err);
-                            } else {
-                                res.status(201).json({
-                                    message: "Chapter uploaded!",
-                                    manga: manga,
-                                });
-                            }
-                        }
-                    );
                 });
             });
         });
-        fs.unlinkSync(req.file.path);
-    } catch (err) {
-        res.status(400).json({
-            status: 400,
-            message: "Bad request",
-            error: err.message,
+    });
+}
+
+const AddHistory = (req, res) => {
+    if (!req.body.username) return res.error({ message: "Username is required" });
+    if (!req.body.mangaId) return res.error({ message: "Manga ID is required" });
+    if (!req.body.chapterId) return res.error({ message: "Chapter ID is required" });
+
+    User.findOne({ name: req.body.username }).exec(function (err, user) {
+        if (err) return res.internal({ message: "Error occurred", errors: err });
+        if (!user) return res.error({ message: "User not found" });
+
+        const newHistory = {
+            mangaId: req.body.mangaId,
+            mangaTitle: req.body.mangaTitle,
+            mangaCover: req.body.mangaCover,
+            chapterId: req.body.chapterId,
+            chapterTitle: req.body.chapterTitle,
+        }
+
+        let checkExist = false;
+
+        // Check if manga is already in history
+        for (let history of user.mangaHistory) {
+            if (history.mangaId === req.body.mangaId) {
+                checkExist = true;
+                // Only update chapter if it's different
+                if (history.chapterId !== req.body.chapterId) {
+                    history.chapterId = req.body.chapterId;
+                    history.chapterTitle = req.body.chapterTitle;
+                } else {
+                    return res.success({ message: "History already exists" });
+                }
+            }
+        };
+
+        if (!checkExist) {
+            user.mangaHistory.push(newHistory);
+        }
+
+        user.markModified("mangaHistory");
+
+        user.save((err) => {
+            if (err) return res.error({ message: "Add history failed", errors: err });
+            res.success({ message: "History added" });
         });
-    }
+    });
 };
 
-export { GetMangaList, GetManga, CreateAction, UploadChapter };
+const GetHistory = (req, res) => {
+    if (!req.query.username) return res.error({ message: "Username is required" });
+
+    User.findOne({ name: req.query.username }).exec(function (err, user) {
+        if (err) return res.internal({ message: "Error occurred", errors: err });
+        if (!user) return res.error({ message: "User not found" });
+
+        res.success({ message: "History found", result: user.mangaHistory.slice(0, 10) });
+    });
+};
+
+export { GetMangaList, GetManga, CreateManga, CreateSection, CreateChapter, GetChapter, AddHistory, GetHistory };
 

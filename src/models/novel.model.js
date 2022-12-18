@@ -13,7 +13,6 @@ const novelNoteSchema = new mongoose.Schema({
     },
     hakoId: {
         type: String,
-        unique: true,
         required: false,
     },
     content: {
@@ -55,7 +54,6 @@ const novelChapterSchema = new mongoose.Schema({
     },
     hakoId: {
         type: String,
-        unique: true,
         required: false,
     },
     hakoUrl: {
@@ -121,7 +119,6 @@ const novelSectionSchema = new mongoose.Schema({
     },
     hakoId: {
         type: String,
-        unique: true,
         required: false,
     },
     cover: {

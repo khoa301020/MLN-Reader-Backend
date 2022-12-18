@@ -92,6 +92,7 @@ const GetChapter = (req, res) => {
 };
 
 const CreateAction = (req, res) => {
+    console.log(req.body);
     if (!req.body.subject) return res.error({ message: "Subject is required" });
     if (!_const.NOVEL_SUBJECTS.includes(req.body.subject)) return res.error({ message: "Subject is invalid" });
 
@@ -113,7 +114,7 @@ const CreateAction = (req, res) => {
                 otherNames: req.body.otherNames ? JSON.parse(req.body.otherNames) : [],
                 description: req.body.description,
                 uploader: req.body.uploader,
-                tags: JSON.parse(req.body.tags),
+                tags: req.body.tags ? JSON.parse(req.body.tags) : [],
             });
             prefix = "novel_";
             break;
@@ -204,7 +205,7 @@ const CreateAction = (req, res) => {
                 target.id = prefix + SystemStatus[lastIdProperty];
 
                 if (req.file && req.body.subject === "section") {
-                    const filePath = `novel/${parent.novelId}/${target.id}/cover${path.extname(req.file.originalname)}`
+                    const filePath = `novel/${parent.id}/${target.id}/cover${path.extname(req.file.originalname)}`
 
                     bucket.file(filePath)
                         .save(req.file.buffer, {
