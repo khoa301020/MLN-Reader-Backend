@@ -1,6 +1,11 @@
 import express from "express";
 import multer from 'multer';
-import { AddHistory, CreateChapter, CreateManga, CreateSection, GetChapter, GetHistory, GetManga, GetMangaList } from "../controllers/manga.controller.js";
+import {
+    AddHistory, CreateChapter, CreateManga,
+    CreateSection, GetChapter, GetHistory,
+    GetManga, GetMangaList, GetMangaUpdate,
+    GetSection, UpdateChapter, UpdateManga, UpdateSection
+} from "../controllers/manga.controller.js";
 
 const chapterupload = multer({ storage: multer.memoryStorage() }).single('chapter');
 
@@ -14,6 +19,12 @@ router.get("/get-list", GetMangaList);
 // get manga
 router.get("/get-manga", GetManga);
 
+// get manga update
+router.get("/get-manga-update", GetMangaUpdate);
+
+// get section
+router.get("/get-section", GetSection);
+
 // get chapter
 router.get("/get-chapter", GetChapter);
 
@@ -25,6 +36,15 @@ router.post("/create-section", coverupload, CreateSection);
 
 // upload chapter
 router.post("/create-chapter", chapterupload, CreateChapter);
+
+// update manga
+router.post("/update-manga", coverupload, UpdateManga);
+
+// update section
+router.post("/update-section", coverupload, UpdateSection);
+
+// update chapter
+router.post("/update-chapter", chapterupload, UpdateChapter);
 
 // add history
 router.post("/add-history", AddHistory);

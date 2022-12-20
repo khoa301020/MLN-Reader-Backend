@@ -22,16 +22,79 @@ const GetNovelList = async (req, res) => {
 const GetNovel = (req, res) => {
     if (!req.query.novelId) return res.error({ message: "Novel id is required" });
 
-    Novel.findOne({ id: req.query.novelId })
+    let find;
+    if (req.query.isOnly === 'true') {
+        find = Novel.findOne({ id: req.query.novelId }).select('id title otherNames author artist status tags cover description');
+    } else {
+        find = Novel.findOne({ id: req.query.novelId })
+            .populate({
+                path: 'sections',
+                populate: { path: 'chapters', select: '-content -notes -hakoUrl' }
+            });
+    }
+
+    find.exec((err, novel) => {
+        if (err) return res.error({ message: "Get novel failed", errors: err });
+        if (!novel) return res.error({ message: "Novel not found" });
+
+        res.success({ message: "Get novel successfully", result: novel });
+    });
+};
+
+const GetNovelUpdate = (req, res) => {
+    if (!req.query.novelId) return res.error({ message: "Novel id is required" });
+    Novel.findOne({ id: req.query.novelId }).select('id title')
         .populate({
-            path: 'sections',
-            populate: { path: 'chapters', select: '-content -notes -hakoUrl' }
+            path: 'sections', select: 'id name',
+            populate: { path: 'chapters', select: 'id title' }
         }).exec((err, novel) => {
             if (err) return res.error({ message: "Get novel failed", errors: err });
             if (!novel) return res.error({ message: "Novel not found" });
 
-            res.success({ message: "Get novel successfully", result: novel });
+            let novelUpdate = {
+                id: novel.id,
+                title: novel.title,
+                type: 'novel',
+                key: '0-0',
+                children: []
+            };
+
+            novel.sections.forEach((section, sectionIndex) => {
+                let sectionUpdate = {
+                    id: section.id,
+                    title: section.name,
+                    type: 'novel-section',
+                    key: `0-0-${sectionIndex}`,
+                    children: []
+                };
+
+                section.chapters.forEach((chapter, chapterIndex) => {
+                    let chapterUpdate = {
+                        id: chapter.id,
+                        type: 'novel-chapter',
+                        title: chapter.title,
+                        key: `0-0-${sectionIndex}-${chapterIndex}`
+                    };
+
+                    sectionUpdate.children.push(chapterUpdate);
+                });
+
+                novelUpdate.children.push(sectionUpdate);
+            });
+
+            res.success({ message: "Get novel successfully", result: novelUpdate });
         });
+};
+
+const GetSection = (req, res) => {
+    if (!req.query.sectionId) return res.error({ message: "Section id is required" });
+
+    Section.findOne({ id: req.query.sectionId }).select('id name cover').exec((err, section) => {
+        if (err) return res.error({ message: "Get section failed", errors: err });
+        if (!section) return res.error({ message: "Section not found" });
+
+        res.success({ message: "Get section successfully", result: section });
+    });
 };
 
 const GetChapter = (req, res) => {
@@ -43,51 +106,62 @@ const GetChapter = (req, res) => {
             if (!chapter) return res.error({ message: "Chapter not found" });
 
             const sectionTitle = Section.findOne({ id: chapter.sectionId }).select('name').exec((err, section) => { return section.name; });
-            console.log(sectionTitle);
 
-            chapter.viewCount += 1;
+            if (req.query.isOnly === 'true') {
+                chapter = {
+                    id: chapter.id,
+                    title: chapter.title,
+                    content: chapter.content,
+                    sectionTitle: sectionTitle,
+                    notes: chapter.notes
+                };
 
-            chapter.save((err, chapterSave) => {
-                if (err) console.log(err);
-                if (err) return res.error({ message: "Get chapter failed", errors: err });
+                res.success({ message: "Get chapter successfully", result: chapter });
+            } else {
+                chapter.viewCount += 1;
 
-
-                Novel.findOne({ id: chapter.novelId }).exec((err, novel) => {
+                chapter.save((err, chapterSave) => {
                     if (err) console.log(err);
+                    if (err) return res.error({ message: "Get chapter failed", errors: err });
 
-                    const current = Helper.getCurrent();
 
-                    if (novel) {
-                        novel.statistics.totalView += 1;
-                        novel.statistics.dailyView[`${current.currentDate}`] ?
-                            novel.statistics.dailyView[`${current.currentDate}`] += 1 :
-                            novel.statistics.dailyView[`${current.currentDate}`] = 1;
-                        novel.statistics.monthlyView[`${current.currentMonth}`] ?
-                            novel.statistics.monthlyView[`${current.currentMonth}`] += 1 :
-                            novel.statistics.monthlyView[`${current.currentMonth}`] = 1;
-                        novel.statistics.yearlyView[`${current.currentYear}`] ?
-                            novel.statistics.yearlyView[`${current.currentYear}`] += 1 :
-                            novel.statistics.yearlyView[`${current.currentYear}`] = 1;
-                    }
-
-                    novel.markModified('statistics');
-
-                    novel.save((err, novelSave) => {
+                    Novel.findOne({ id: chapter.novelId }).exec((err, novel) => {
                         if (err) console.log(err);
-                    });
 
-                    res.success({
-                        message: "Get chapter successfully",
-                        result: {
-                            chapter: chapterSave,
-                            novelTitle: novel.title,
-                            novelCover: novel.cover,
-                            sectionTitle: sectionTitle,
+                        const current = Helper.getCurrent();
+
+                        if (novel) {
+                            novel.statistics.totalView += 1;
+                            novel.statistics.dailyView[`${current.currentDate}`] ?
+                                novel.statistics.dailyView[`${current.currentDate}`] += 1 :
+                                novel.statistics.dailyView[`${current.currentDate}`] = 1;
+                            novel.statistics.monthlyView[`${current.currentMonth}`] ?
+                                novel.statistics.monthlyView[`${current.currentMonth}`] += 1 :
+                                novel.statistics.monthlyView[`${current.currentMonth}`] = 1;
+                            novel.statistics.yearlyView[`${current.currentYear}`] ?
+                                novel.statistics.yearlyView[`${current.currentYear}`] += 1 :
+                                novel.statistics.yearlyView[`${current.currentYear}`] = 1;
                         }
-                    });
-                });
 
-            });
+                        novel.markModified('statistics');
+
+                        novel.save((err, novelSave) => {
+                            if (err) console.log(err);
+                        });
+
+                        res.success({
+                            message: "Get chapter successfully",
+                            result: {
+                                chapter: chapterSave,
+                                novelTitle: novel.title,
+                                novelCover: novel.cover,
+                                sectionTitle: sectionTitle,
+                            }
+                        });
+                    });
+
+                });
+            }
         });
 };
 
@@ -178,6 +252,7 @@ const CreateAction = (req, res) => {
                     .save(req.file.buffer, {
                         metadata: {
                             contentType: req.file.mimetype,
+                            cacheControl: 'private',
                         },
                     }, (err) => {
                         if (err) return console.log(err);
@@ -237,7 +312,9 @@ const CreateAction = (req, res) => {
         }
     })
 };
+
 const UpdateAction = (req, res) => {
+    console.log(req.body);
     if (!req.body.subject) return res.error({ message: "Subject is required" });
     if (!_const.NOVEL_SUBJECTS.includes(req.body.subject)) return res.error({ message: "Subject is invalid" });
 
@@ -247,17 +324,13 @@ const UpdateAction = (req, res) => {
         case 'novel':
             Model = Novel;
             data = {
-                info: {
-                    title: req.body.info.title,
-                    cover: req.body.info.cover,
-                    author: req.body.info.author,
-                    artist: req.body.info.artist,
-                    status: req.body.info.status,
-                    otherNames: req.body.info.otherNames,
-                    description: req.body.info.description,
-                    uploader: req.body.info.uploader,
-                    tags: req.body.info.tags,
-                }
+                title: req.body.title,
+                author: req.body.author,
+                artist: req.body.artist,
+                status: req.body.status,
+                otherNames: req.body.otherNames ? JSON.parse(req.body.otherNames) : [],
+                description: req.body.description,
+                tags: req.body.tags ? JSON.parse(req.body.tags) : [],
             };
             break;
         case 'section':
@@ -272,6 +345,7 @@ const UpdateAction = (req, res) => {
             data = {
                 title: req.body.title,
                 content: req.body.content,
+                wordCount: req.body.wordCount,
             };
             break;
         case 'note':
@@ -287,6 +361,26 @@ const UpdateAction = (req, res) => {
     Model.findOne({ id: req.body.id }).exec(function (err, target) {
         if (err) return res.internal({ message: "Error occurred", errors: err });
         if (!target) return res.error({ message: `${Helper.capitalizeFirstLetter(req.body.subject)} not found` });
+
+        let subjectPath;
+        if (req.body.subject === 'novel')
+            subjectPath = `${target.id}/`
+        else if (req.body.subject === 'section')
+            subjectPath = `${target.novelId}/${target.id}_`;
+
+        if (req.file) {
+            const filePath = `novel/${subjectPath}cover${path.extname(req.file.originalname)}`
+            bucket.file(filePath)
+                .save(req.file.buffer, {
+                    metadata: {
+                        contentType: req.file.mimetype,
+                        cacheControl: 'private',
+                    },
+                }, (err) => {
+                    if (err) return console.log(err);
+                });
+            target.cover = process.env.GCP_STORAGE_URL + filePath;
+        }
 
         for (let key in data) {
             if (data[key]) target[key] = data[key];
@@ -446,5 +540,5 @@ const GetHistory = (req, res) => {
     });
 };
 
-export { GetNovelList, GetNovel, GetChapter, CreateAction, UpdateAction, DeleteAction, FollowAction, AddHistory, GetHistory };
+export { GetNovelList, GetNovel, GetChapter, CreateAction, UpdateAction, DeleteAction, FollowAction, AddHistory, GetHistory, GetNovelUpdate, GetSection };
 

@@ -24,10 +24,7 @@ async function importAll() {
             status: novel.info.status,
             otherNames: novel.info.otherNames,
             description: novel.info.description,
-            uploader: {
-                userId: novel.info.uploader.id,
-                userName: novel.info.uploader.name,
-            },
+            uploader: "user_1",
             tags: novel.info.tags,
         }).then(async resNovel => {
             console.log(resNovel.data.message);
@@ -59,12 +56,12 @@ async function importAll() {
                                 const createNote = await axios.post(baseUrl, {
                                     subject: "note",
                                     chapterId: resChapter.data.result.id,
-                                    hakoId: note.noteId,
-                                    content: note.noteContent,
+                                    hakoId: note.hakoId,
+                                    content: note.content,
                                 }).then(resNote => {
                                     console.log(resNote.data.message);
                                 }).catch(err => {
-                                    console.log(err);
+                                    console.log(err.request);
                                 });
                                 notePromises.push(await timer(0).then(() => createNote));
                             }
@@ -72,7 +69,7 @@ async function importAll() {
                                 return;
                             });
                         }).catch(err => {
-                            console.log(err);
+                            console.log(err.request);
                         });
                         chapterPromises.push(await timer(0).then(() => createChapter));
                     }
@@ -80,7 +77,7 @@ async function importAll() {
                         return;
                     });
                 }).catch(err => {
-                    console.log(err);
+                    console.log(err.request);
                 });
                 sectionPromises.push(await timer(0).then(() => createSection));
             }
@@ -88,7 +85,7 @@ async function importAll() {
                 return;
             });
         }).catch(err => {
-            console.log(err);
+            console.log(err.request);
         });
         novelPromises.push(await timer(0).then(() => createNovel));
     }
@@ -98,7 +95,7 @@ async function importAll() {
     });
 }
 
-// await importAll();
+await importAll();
 
 async function importTags() {
     const baseUrl = "http://localhost:3333/api/common/tag-action";
@@ -140,4 +137,4 @@ async function importTags() {
     });
 }
 
-await importTags();
+// await importTags();

@@ -19,6 +19,10 @@ const Const = Object.freeze({
         topRating: { "ratingSum": -1 },
     },
 
+    GCP_FILE_METADATA: {
+        cacheControl: 'private',
+    },
+
     PAGINATE: 20,
     CURRENT_PAGE: 1,
 

@@ -6,6 +6,7 @@ import path from "path";
 function prettyAll() {
     const jsonsInDir = fs.readdirSync('./crawler/backup').filter(file => path.extname(file) === '.json');
 
+    let noteCount = 1;
     jsonsInDir.forEach(file => {
         const fileData = fs.readFileSync(path.join('./crawler/backup', file), 'utf8');
         const novel = JSON.parse(fileData.toString());
@@ -54,7 +55,7 @@ function prettyAll() {
             delete section.sectionCover;
             for (const chapter of section.chapters) {
                 try {
-                    const $ = cheerio.load(chapter.content);
+                    let $ = cheerio.load(chapter.content);
 
                     $('h3+p+p+a+a').remove();
                     $('h3+p+p+a').remove();
@@ -64,11 +65,19 @@ function prettyAll() {
 
                     chapter.notes = [];
                     $('.note-reg>div').each((i, el) => {
+                        const note = "note" + noteCount++;
                         const noteId = $(el).attr('id');
+                        // check p in $2 text contains noteId and replace with note
+                        $('p').each((i, el) => {
+                            if ($(el).text().includes(noteId)) {
+                                $(el).text($(el).text().replace(noteId, note));
+                            }
+                        });
                         const noteContent = $(el).find('span.note-content_real').html();
-                        chapter.notes.push({ noteId, noteContent });
+                        chapter.notes.push({ id: note, hakoId: noteId, content: noteContent });
                     });
 
+                    $('.note-reg').remove();
                     $('head').remove();
 
                     chapter.content = $('body').html().trim();

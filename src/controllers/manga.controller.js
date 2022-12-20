@@ -32,66 +32,141 @@ const GetChapter = (req, res) => {
         if (!chapter) return res.error({ message: "Chapter not found" });
 
         const sectionTitle = Section.findOne({ id: chapter.sectionId }).select('name').exec((err, section) => { return section.name; });
-        console.log(sectionTitle);
 
-        chapter.viewCount += 1;
+        if (req.query.isOnly === 'true') {
 
-        chapter.save((err, chapterSave) => {
-            if (err) console.log(err);
-            if (err) return res.error({ message: "Get chapter failed", errors: err });
+            chapter = {
+                id: chapter.id,
+                title: chapter.title,
+                pages: chapter.pages,
+            };
 
-            Manga.findOne({ id: chapter.mangaId }).exec((err, manga) => {
+            res.success({ message: "Get chapter successfully", result: chapter });
+
+        } else {
+
+            chapter.viewCount += 1;
+
+            chapter.save((err, chapterSave) => {
                 if (err) console.log(err);
+                if (err) return res.error({ message: "Get chapter failed", errors: err });
 
-                const current = Helper.getCurrent();
-
-                if (manga) {
-                    manga.statistics.totalView += 1;
-                    manga.statistics.dailyView[`${current.currentDate}`] ?
-                        manga.statistics.dailyView[`${current.currentDate}`] += 1 :
-                        manga.statistics.dailyView[`${current.currentDate}`] = 1;
-                    manga.statistics.monthlyView[`${current.currentMonth}`] ?
-                        manga.statistics.monthlyView[`${current.currentMonth}`] += 1 :
-                        manga.statistics.monthlyView[`${current.currentMonth}`] = 1;
-                    manga.statistics.yearlyView[`${current.currentYear}`] ?
-                        manga.statistics.yearlyView[`${current.currentYear}`] += 1 :
-                        manga.statistics.yearlyView[`${current.currentYear}`] = 1;
-                }
-
-                manga.markModified('statistics');
-
-                manga.save((err, mangaSave) => {
+                Manga.findOne({ id: chapter.mangaId }).exec((err, manga) => {
                     if (err) console.log(err);
-                });
 
-                res.success({
-                    message: "Get chapter successfully",
-                    result: {
-                        chapter: chapterSave,
-                        mangaTitle: manga.title,
-                        mangaCover: manga.cover,
-                        sectionTitle: sectionTitle,
+                    const current = Helper.getCurrent();
+
+                    if (manga) {
+                        manga.statistics.totalView += 1;
+                        manga.statistics.dailyView[`${current.currentDate}`] ?
+                            manga.statistics.dailyView[`${current.currentDate}`] += 1 :
+                            manga.statistics.dailyView[`${current.currentDate}`] = 1;
+                        manga.statistics.monthlyView[`${current.currentMonth}`] ?
+                            manga.statistics.monthlyView[`${current.currentMonth}`] += 1 :
+                            manga.statistics.monthlyView[`${current.currentMonth}`] = 1;
+                        manga.statistics.yearlyView[`${current.currentYear}`] ?
+                            manga.statistics.yearlyView[`${current.currentYear}`] += 1 :
+                            manga.statistics.yearlyView[`${current.currentYear}`] = 1;
                     }
-                });
-            });
 
-        });
+                    manga.markModified('statistics');
+
+                    manga.save((err, mangaSave) => {
+                        if (err) console.log(err);
+                    });
+
+                    res.success({
+                        message: "Get chapter successfully",
+                        result: {
+                            chapter: chapterSave,
+                            mangaTitle: manga.title,
+                            mangaCover: manga.cover,
+                            sectionTitle: sectionTitle,
+                        }
+                    });
+                });
+
+            });
+        }
     });
 };
 
 const GetManga = (req, res) => {
     if (!req.query.mangaId) return res.error({ message: "Manga id is required" });
 
-    Manga.findOne({ id: req.query.mangaId })
+    let find;
+    if (req.query.isOnly === 'true') {
+        find = Manga.findOne({ id: req.query.mangaId }).select('id title otherNames author artist status tags cover description');
+    } else {
+        find = Manga.findOne({ id: req.query.mangaId })
+            .populate({
+                path: 'sections',
+                populate: { path: 'chapters', select: '-content -notes -hakoUrl' }
+            });
+    }
+
+    find.exec((err, manga) => {
+        if (err) return res.error({ message: "Get manga failed", errors: err });
+        if (!manga) return res.error({ message: "Manga not found" });
+
+        res.success({ message: "Get manga successfully", result: manga });
+    });
+};
+
+const GetMangaUpdate = (req, res) => {
+    if (!req.query.mangaId) return res.error({ message: "Manga id is required" });
+    Manga.findOne({ id: req.query.mangaId }).select('id title')
         .populate({
-            path: 'sections',
-            populate: { path: 'chapters', select: '-content -notes -hakoUrl' }
+            path: 'sections', select: 'id name',
+            populate: { path: 'chapters', select: 'id title' }
         }).exec((err, manga) => {
             if (err) return res.error({ message: "Get manga failed", errors: err });
             if (!manga) return res.error({ message: "Manga not found" });
 
-            res.success({ message: "Get manga successfully", result: manga });
+            let mangaUpdate = {
+                id: manga.id,
+                title: manga.title,
+                type: 'manga',
+                key: '0-0',
+                children: []
+            };
+
+            manga.sections.forEach((section, sectionIndex) => {
+                let sectionUpdate = {
+                    id: section.id,
+                    title: section.name,
+                    type: 'manga-section',
+                    key: `0-0-${sectionIndex}`,
+                    children: []
+                };
+
+                section.chapters.forEach((chapter, chapterIndex) => {
+                    let chapterUpdate = {
+                        id: chapter.id,
+                        type: 'manga-chapter',
+                        title: chapter.title,
+                        key: `0-0-${sectionIndex}-${chapterIndex}`
+                    };
+
+                    sectionUpdate.children.push(chapterUpdate);
+                });
+
+                mangaUpdate.children.push(sectionUpdate);
+            });
+
+            res.success({ message: "Get manga successfully", result: mangaUpdate });
         });
+};
+
+const GetSection = (req, res) => {
+    if (!req.query.sectionId) return res.error({ message: "Section id is required" });
+
+    Section.findOne({ id: req.query.sectionId }).exec((err, section) => {
+        if (err) return res.error({ message: "Get section failed", errors: err });
+        if (!section) return res.error({ message: "Section not found" });
+
+        res.success({ message: "Get section successfully", result: section });
+    });
 };
 
 const CreateManga = (req, res) => {
@@ -119,6 +194,7 @@ const CreateManga = (req, res) => {
                 .save(req.file.buffer, {
                     metadata: {
                         contentType: req.file.mimetype,
+                        cacheControl: 'private'
                     },
                 }, (err) => {
                     if (err) return console.log(err);
@@ -161,6 +237,7 @@ const CreateSection = (req, res) => {
                     .save(req.file.buffer, {
                         metadata: {
                             contentType: req.file.mimetype,
+                            cacheControl: 'private'
                         },
                     }, (err) => {
                         if (err) return console.log(err);
@@ -190,7 +267,7 @@ const CreateSection = (req, res) => {
 }
 
 const CreateChapter = (req, res) => {
-    if (path.extname(req.file.originalname) !== '.zip') {
+    if (path.extname(req.file?.originalname) !== '.zip') {
         return res.status(400).json({ error: 'File must be a zip file' })
     };
 
@@ -212,12 +289,12 @@ const CreateChapter = (req, res) => {
             // check if folder exists in zip
             if (zip.folder(/(.*\/)/).length > 0) {
                 console.log(zip.folder(/(.*\/)/));
-                throw new Error('Zip file contains a directory');
+                return res.status(400).json({ error: 'Zip file contains a directory' });
             }
             // check if zip files contain a string file name
             if (zip.file(/([^\d]+)\..*/).length > 0) {
                 console.log(zip.file(/^\d$/));
-                throw new Error('Zip file contains a non-number name');
+                return res.status(400).json({ error: 'Zip file contains a non-number name' });
             }
             let listPages = [];
             let listPromises = [];
@@ -231,7 +308,7 @@ const CreateChapter = (req, res) => {
                     }
                 });
                 const upload = setParams.then(async function (params) {
-                    return await bucket.file(params.Path).save(params.Data).then(() => {
+                    return await bucket.file(params.Path).save(params.Data, _const.GCP_FILE_METADATA).then(() => {
                         listPages.push({
                             pageNumber: zipEntry.name.replace(/\.[^.]+$/, ''),
                             pageUrl: process.env.GCP_STORAGE_URL + params.Path,
@@ -273,6 +350,142 @@ const CreateChapter = (req, res) => {
                 });
             });
         });
+    });
+}
+
+const UpdateManga = (req, res) => {
+    if (!req.body.id) return res.error({ message: "Manga ID is required" });
+
+    Manga.findOne({ id: req.body.id }).exec(function (err, manga) {
+        if (err) return res.internal({ message: "Error occurred", errors: err });
+        if (!manga) return res.error({ message: "Manga not found" });
+
+        if (req.body.title) manga.title = req.body.title;
+        if (req.file) {
+            const filePath = `manga/${manga.id}/cover${path.extname(req.file.originalname)}`
+            bucket.file(filePath)
+                .save(req.file.buffer, {
+                    metadata: {
+                        contentType: req.file.mimetype,
+                        cacheControl: 'private',
+                    },
+                }, (err) => {
+                    if (err) return console.log(err);
+                });
+            manga.cover = process.env.GCP_STORAGE_URL + filePath;
+        }
+        if (req.body.author) manga.author = req.body.author;
+        if (req.body.artist) manga.artist = req.body.artist;
+        if (req.body.description) manga.description = req.body.description;
+        if (req.body.status) manga.status = req.body.status;
+        if (req.body.tags) manga.tags = req.body.tags ? JSON.parse(req.body.tags) : [];
+        if (req.body.otherNames) manga.otherNames = req.body.otherNames ? JSON.parse(req.body.otherNames) : [];
+
+        manga.save((err) => {
+            if (err) return res.error({ message: "Update manga failed", errors: err });
+            res.updated({ message: "Manga updated!", result: manga });
+        });
+    });
+}
+
+const UpdateSection = (req, res) => {
+    if (!req.body.id) return res.error({ message: "Section ID is required" });
+
+    Section.findOne({ id: req.body.id }).exec(function (err, section) {
+        if (err) return res.internal({ message: "Error occurred", errors: err });
+        if (!section) return res.error({ message: "Section not found" });
+
+        if (req.body.name) section.name = req.body.name;
+        if (req.file) {
+            const filePath = `manga/${section.mangaId}/${section.id}_cover${path.extname(req.file.originalname)}`;
+            bucket.file(filePath)
+                .save(req.file.buffer, {
+                    metadata: {
+                        contentType: req.file.mimetype,
+                        cacheControl: 'private',
+                    },
+                }, (err) => {
+                    if (err)
+                        return console.log(err);
+                });
+            section.cover = process.env.GCP_STORAGE_URL + filePath;
+        }
+
+        section.save((err) => {
+            if (err) return res.error({ message: "Update section failed", errors: err });
+            res.updated({ message: "Section updated!", result: section });
+        });
+    });
+
+}
+
+const UpdateChapter = (req, res) => {
+    if (!req.body.id) return res.error({ message: "Chapter ID is required" });
+
+    Chapter.findOne({ id: req.body.id }).exec(async function (err, chapter) {
+        if (err) return res.internal({ message: "Error occurred", errors: err });
+        if (!chapter) return res.error({ message: "Chapter not found" });
+
+        if (req.file) {
+            if (path.extname(req.file?.originalname) !== '.zip') {
+                return res.status(400).json({ error: 'File must be a zip file' })
+            };
+
+            // Get a list of all the objects in the folder
+            const [objects] = await bucket.getFiles({ prefix: `manga/${chapter.mangaId}/${chapter.sectionId}/${chapter.id}` });
+
+            // Delete all the objects
+            for (const object of objects) {
+                await object.delete();
+            }
+
+            await JSZip.loadAsync(req.file.buffer).then(function (zip) {
+                // check if folder exists in zip
+                if (zip.folder(/(.*\/)/).length > 0) {
+                    console.log(zip.folder(/(.*\/)/));
+                    return res.status(400).json({ error: 'Zip file contains a directory' });
+                }
+                // check if zip files contain a string file name
+                if (zip.file(/([^\d]+)\..*/).length > 0) {
+                    console.log(zip.file(/^\d$/));
+                    return res.status(400).json({ error: 'Zip file contains a non-number name' });
+                }
+                let listPages = [];
+                let listPromises = [];
+                zip.file(/.*/).map(function (zipEntry) {
+                    // extract image with binary data
+                    const buffer = zipEntry.async('arraybuffer');
+                    const setParams = buffer.then(async function (content) {
+                        return {
+                            Path: `manga/${chapter.mangaId}/${chapter.sectionId}/${chapter.id}/${zipEntry.name}`,
+                            Data: Buffer.from(content),
+                        }
+                    });
+                    const upload = setParams.then(async function (params) {
+                        return await bucket.file(params.Path).save(params.Data, _const.GCP_FILE_METADATA).then(() => {
+                            listPages.push({
+                                pageNumber: zipEntry.name.replace(/\.[^.]+$/, ''),
+                                pageUrl: process.env.GCP_STORAGE_URL + params.Path,
+                            });
+                        });
+                    });
+                    listPromises.push(upload);
+                });
+
+                // wait for all promises to resolve
+                Promise.all(listPromises).then(() => {
+                    listPages.sort((a, b) => { return a.pageNumber - b.pageNumber });
+                    chapter.pages = listPages;
+                    if (req.body.title) chapter.title = req.body.title;
+                    chapter.markModified('pages');
+                    // update chapter
+                    chapter.save((err) => {
+                        if (err) return res.error({ message: "Update chapter failed", errors: err });
+                        res.updated({ message: "Chapter updated!", result: chapter });
+                    });
+                });
+            });
+        }
     });
 }
 
@@ -333,5 +546,5 @@ const GetHistory = (req, res) => {
     });
 };
 
-export { GetMangaList, GetManga, CreateManga, CreateSection, CreateChapter, GetChapter, AddHistory, GetHistory };
+export { GetMangaList, GetManga, CreateManga, CreateSection, CreateChapter, GetChapter, AddHistory, GetHistory, GetMangaUpdate, GetSection, UpdateSection, UpdateChapter, UpdateManga };
 
