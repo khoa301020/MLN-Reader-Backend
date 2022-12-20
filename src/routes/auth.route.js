@@ -1,5 +1,5 @@
 import express from "express";
-import { GetAll, Login, Logout, Register, Verify } from "../controllers/auth.controller.js";
+import { BookVerify, GetAll, Login, Logout, Register, Verify } from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
@@ -14,6 +14,9 @@ router.post("/login", Login);
 
 // create route to verify user
 router.post("/verify", Verify);
+
+// create route to verify book
+router.post("/book-verify", BookVerify);
 
 // create route to logout user
 router.post("/logout", Logout);

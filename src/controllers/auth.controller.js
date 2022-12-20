@@ -1,8 +1,9 @@
 import jwt from "jsonwebtoken";
 import { SystemStatus } from "../models/common.model.js";
+import { Manga } from "../models/manga.model.js";
+import { Novel } from "../models/novel.model.js";
 import User from "../models/user.model.js";
 
-// Get all
 const GetAll = async (req, res) => {
     try {
         const users = await User.find({});
@@ -12,7 +13,6 @@ const GetAll = async (req, res) => {
     }
 }
 
-// Register
 const Register = (req, res) => {
     SystemStatus.findOne({}).exec(function (err, systemStatus) {
         if (err) return res.error({ message: "Error occured", errors: err });
@@ -57,7 +57,6 @@ const Register = (req, res) => {
     });
 }
 
-// Login
 const Login = (req, res) => {
     User.findOne({
         $or: [
@@ -92,6 +91,24 @@ const Login = (req, res) => {
     });
 }
 
+const Logout = (req, res) => {
+    const username = req.body.username;
+
+    User.findOne({ name: username }, (err, user) => {
+        if (err) return res.internal({ message: "Error occured", errors: err });
+        if (!user) return res.unauth({ message: "User not found" });
+
+        user.token = null;
+        user.save((err) => {
+            if (err) return res.internal({ message: "Error occured", errors: err });
+
+            res.success({
+                message: "User logged out",
+            });
+        });
+    });
+}
+
 const Verify = (req, res) => {
     const username = req.body.username;
     const token = req.headers.authorization.split(" ")[1];
@@ -116,25 +133,45 @@ const Verify = (req, res) => {
     }
 }
 
-const Logout = (req, res) => {
-    const username = req.body.username;
+const BookVerify = (req, res) => {
+    const { id, username } = req.body;
+    const token = req.headers.authorization.split(" ")[1];
+    if (!id || !username || !token) return res.unauth({ message: "Invalid request" });
 
-    User.findOne({ name: username }, (err, user) => {
-        if (err) return res.internal({ message: "Error occured", errors: err });
-        if (!user) return res.unauth({ message: "User not found" });
-
-        user.token = null;
-        user.save((err) => {
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        User.findOne({ id: decoded.id, token: token }, (err, user) => {
             if (err) return res.internal({ message: "Error occured", errors: err });
+            if (!user) return res.unauth({ message: "User not found" });
+            if (user.name !== username) return res.unauth({ message: "Wrong user" });
 
-            res.success({
-                message: "User logged out",
+            let find;
+            if (id.includes("novel")) {
+                find = Novel.findOne({ id }).select("uploader");
+            } else if (id.includes("manga")) {
+                find = Manga.findOne({ id }).select("uploader");
+            }
+
+            find.exec((err, book) => {
+                if (err) return res.internal({ message: "Error occured", errors: err });
+                if (!book) return res.unauth({ message: "Book not found" });
+
+                if (book.uploader !== user.name) return res.success({ message: "Failed" });
+
+                res.success({
+                    message: "Succeed",
+                    result: {
+                        username: user.name,
+                        role: user.role,
+                    }
+                });
             });
         });
-    });
+    } catch (error) {
+        return res.unauth({ message: "Invalid token" });
+    }
 }
 
-
 // Export
-export { GetAll, Register, Login, Verify, Logout };
+export { GetAll, Register, Login, Verify, BookVerify, Logout };
 
