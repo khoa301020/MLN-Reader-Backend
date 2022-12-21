@@ -27,29 +27,36 @@ const GetMangaList = async (req, res) => {
 const GetChapter = (req, res) => {
     if (!req.query.chapterId) return res.error({ message: "Chapter id is required" });
 
-    Chapter.findOne({ id: req.query.chapterId }).exec(async (err, chapter) => {
-        if (err) return res.error({ message: "Get chapter failed", errors: err });
-        if (!chapter) return res.error({ message: "Chapter not found" });
+    Chapter.findOne({ id: req.query.chapterId })
+        .populate("sectionInfo", "-_id id name cover")
+        .populate({
+            path: "comments", select: "-_id id userId content createdAt",
+            populate: { path: "user", select: "-_id id name avatar" },
+        })
+        .exec(async (err, chapter) => {
+            if (err) return res.error({ message: "Get chapter failed", errors: err });
+            if (!chapter) return res.error({ message: "Chapter not found" });
 
-        const sectionTitle = Section.findOne({ id: chapter.sectionId }).select('name').exec((err, section) => { return section.name; });
+            const sectionTitle = Section.findOne({ id: chapter.sectionId }).select('name').exec((err, section) => { return section.name; });
 
-        if (req.query.isOnly === 'true') {
+            if (req.query.isOnly === 'true') {
 
-            chapter = {
-                id: chapter.id,
-                title: chapter.title,
-                pages: chapter.pages,
-            };
+                chapter = {
+                    id: chapter.id,
+                    title: chapter.title,
+                    pages: chapter.pages,
+                };
 
-            res.success({ message: "Get chapter successfully", result: chapter });
+                res.success({ message: "Get chapter successfully", result: chapter });
 
-        } else {
+            } else {
 
-            chapter.viewCount += 1;
+                //increment viewCount
+                Chapter.updateOne({ id: chapter.id }, { $inc: { viewCount: 1 } }).exec((err, chapterSave) => {
+                    if (err) console.log(err);
+                    if (err) return res.error({ message: "Get chapter failed", errors: err });
+                });
 
-            chapter.save((err, chapterSave) => {
-                if (err) console.log(err);
-                if (err) return res.error({ message: "Get chapter failed", errors: err });
 
                 Manga.findOne({ id: chapter.mangaId }).exec((err, manga) => {
                     if (err) console.log(err);
@@ -78,7 +85,7 @@ const GetChapter = (req, res) => {
                     res.success({
                         message: "Get chapter successfully",
                         result: {
-                            chapter: chapterSave,
+                            chapter: chapter,
                             mangaTitle: manga.title,
                             mangaCover: manga.cover,
                             sectionTitle: sectionTitle,
@@ -86,9 +93,8 @@ const GetChapter = (req, res) => {
                     });
                 });
 
-            });
-        }
-    });
+            }
+        });
 };
 
 const GetManga = (req, res) => {
@@ -99,6 +105,11 @@ const GetManga = (req, res) => {
         find = Manga.findOne({ id: req.query.mangaId }).select('id title otherNames author artist status tags cover description');
     } else {
         find = Manga.findOne({ id: req.query.mangaId })
+            .populate("uploaderInfo", "-_id id name avatar")
+            .populate({
+                path: "comments", select: "-_id id userId content createdAt",
+                populate: { path: "user", select: "-_id id name avatar" }
+            })
             .populate({
                 path: 'sections',
                 populate: { path: 'chapters', select: '-content -notes -hakoUrl' }

@@ -5,7 +5,7 @@ const Const = Object.freeze({
     MANGA_SUBJECTS: ['manga', 'section', 'chapter'],
     DELETE_ACTIONS: ['delete', 'restore'],
     FOLLOW_ACTIONS: ['follow', 'unfollow'],
-    COMMENT_ACTIONS: ['comment', 'modify', 'delete'],
+    COMMENT_ACTIONS: ['comment', 'modify', 'delete', 'restore'],
 
     QUERY_SORT: {
         newest: { createdAt: -1 },

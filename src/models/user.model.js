@@ -138,7 +138,6 @@ const userSchema = new mongoose.Schema({
         type: [{
             novelId: {
                 type: String,
-                unique: true,
                 required: true,
             },
             novelCover: {
@@ -170,7 +169,6 @@ const userSchema = new mongoose.Schema({
         type: [{
             mangaId: {
                 type: String,
-                unique: true,
                 required: true,
             },
             mangaCover: {

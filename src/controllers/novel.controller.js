@@ -27,6 +27,11 @@ const GetNovel = (req, res) => {
         find = Novel.findOne({ id: req.query.novelId }).select('id title otherNames author artist status tags cover description');
     } else {
         find = Novel.findOne({ id: req.query.novelId })
+            .populate("uploaderInfo", "-_id id name avatar")
+            .populate({
+                path: "comments", select: "-_id id userId content createdAt",
+                populate: { path: "user", select: "-_id id name avatar" }
+            })
             .populate({
                 path: 'sections',
                 populate: { path: 'chapters', select: '-content -notes -hakoUrl' }
@@ -101,6 +106,15 @@ const GetChapter = (req, res) => {
     if (!req.query.chapterId) return res.error({ message: "Chapter id is required" });
 
     Chapter.findOne({ id: req.query.chapterId })
+        .populate("sectionInfo", "-_id id name cover")
+        .populate({
+            path: "comments", select: "-_id id userId content createdAt",
+            populate: { path: "user", select: "-_id id name avatar" }
+        })
+        .populate({
+            path: "comments", select: "-_id id userId content createdAt",
+            populate: { path: "user", select: "-_id id name avatar" }
+        })
         .populate({ path: 'notes' }).exec(async (err, chapter) => {
             if (err) return res.error({ message: "Get chapter failed", errors: err });
             if (!chapter) return res.error({ message: "Chapter not found" });
@@ -118,49 +132,47 @@ const GetChapter = (req, res) => {
 
                 res.success({ message: "Get chapter successfully", result: chapter });
             } else {
-                chapter.viewCount += 1;
 
-                chapter.save((err, chapterSave) => {
+                Chapter.updateOne({ id: chapter.id }, { $inc: { 'statistics.totalView': 1 } }).exec((err, chapterUpdate) => {
                     if (err) console.log(err);
                     if (err) return res.error({ message: "Get chapter failed", errors: err });
+                });
 
+                Novel.findOne({ id: chapter.novelId }).exec((err, novel) => {
+                    if (err) console.log(err);
 
-                    Novel.findOne({ id: chapter.novelId }).exec((err, novel) => {
+                    const current = Helper.getCurrent();
+
+                    if (novel) {
+                        novel.statistics.totalView += 1;
+                        novel.statistics.dailyView[`${current.currentDate}`] ?
+                            novel.statistics.dailyView[`${current.currentDate}`] += 1 :
+                            novel.statistics.dailyView[`${current.currentDate}`] = 1;
+                        novel.statistics.monthlyView[`${current.currentMonth}`] ?
+                            novel.statistics.monthlyView[`${current.currentMonth}`] += 1 :
+                            novel.statistics.monthlyView[`${current.currentMonth}`] = 1;
+                        novel.statistics.yearlyView[`${current.currentYear}`] ?
+                            novel.statistics.yearlyView[`${current.currentYear}`] += 1 :
+                            novel.statistics.yearlyView[`${current.currentYear}`] = 1;
+                    }
+
+                    novel.markModified('statistics');
+
+                    novel.save((err, novelSave) => {
                         if (err) console.log(err);
-
-                        const current = Helper.getCurrent();
-
-                        if (novel) {
-                            novel.statistics.totalView += 1;
-                            novel.statistics.dailyView[`${current.currentDate}`] ?
-                                novel.statistics.dailyView[`${current.currentDate}`] += 1 :
-                                novel.statistics.dailyView[`${current.currentDate}`] = 1;
-                            novel.statistics.monthlyView[`${current.currentMonth}`] ?
-                                novel.statistics.monthlyView[`${current.currentMonth}`] += 1 :
-                                novel.statistics.monthlyView[`${current.currentMonth}`] = 1;
-                            novel.statistics.yearlyView[`${current.currentYear}`] ?
-                                novel.statistics.yearlyView[`${current.currentYear}`] += 1 :
-                                novel.statistics.yearlyView[`${current.currentYear}`] = 1;
-                        }
-
-                        novel.markModified('statistics');
-
-                        novel.save((err, novelSave) => {
-                            if (err) console.log(err);
-                        });
-
-                        res.success({
-                            message: "Get chapter successfully",
-                            result: {
-                                chapter: chapterSave,
-                                novelTitle: novel.title,
-                                novelCover: novel.cover,
-                                sectionTitle: sectionTitle,
-                            }
-                        });
                     });
 
+                    res.success({
+                        message: "Get chapter successfully",
+                        result: {
+                            chapter: chapter,
+                            novelTitle: novel.title,
+                            novelCover: novel.cover,
+                            sectionTitle: sectionTitle,
+                        }
+                    });
                 });
+
             }
         });
 };

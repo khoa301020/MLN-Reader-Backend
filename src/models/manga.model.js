@@ -280,6 +280,20 @@ mangaSchema.virtual("ratingSum").get(function () {
     return sum;
 });
 
+mangaSchema.virtual("uploaderInfo", {
+    ref: "User",
+    localField: "uploader",
+    foreignField: "name",
+    justOne: true,
+});
+
+mangaChapterSchema.virtual("sectionInfo", {
+    ref: "MangaSection",
+    localField: "sectionId",
+    foreignField: "id",
+    justOne: true,
+});
+
 // exclude fields
 
 mangaSchema.set("toJSON", {

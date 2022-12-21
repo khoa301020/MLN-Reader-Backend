@@ -1,4 +1,4 @@
-import { Tag } from "../models/common.model.js";
+import { Comment, Tag } from "../models/common.model.js";
 
 export const GetTags = async (req, res) => {
     try {
@@ -45,5 +45,27 @@ export const TagAction = async (req, res) => {
         }
     } else {
         return res.error({ message: "Action is invalid" });
+    }
+}
+
+export const GetNewestComments = (req, res) => {
+    try {
+        Comment.find({
+            $or: [
+                { type: 'manga' },
+                { type: 'novel' }
+            ]
+        })
+            .select("path targetId type userId content createdAt")
+            .populate("user", "name avatar")
+            .populate("target", "title")
+            .sort({ createdAt: -1 }).limit(10).exec(async (err, comments) => {
+                if (err) return res.error({ message: "Error occured", errors: err });
+
+                res.success({ message: "Get newest comments", result: comments });
+            });
+    } catch (error) {
+        console.log(error);
+        res.error({ message: "Error occured", errors: error });
     }
 }

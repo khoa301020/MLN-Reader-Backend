@@ -59,15 +59,16 @@ const CommentSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    type: {
+        type: String,
+        required: true,
+        enum: ['novel', 'novel-chapter', 'manga', 'manga-chapter'],
+    },
+    path: {
+        type: String,
+        required: true,
+    },
     userId: {
-        type: String,
-        required: true,
-    },
-    userName: {
-        type: String,
-        required: true,
-    },
-    userAvatar: {
         type: String,
         required: true,
     },
@@ -134,6 +135,50 @@ const TagSchema = new mongoose.Schema({
         default: Date.now,
     },
 });
+
+CommentSchema.virtual('user', {
+    ref: 'User',
+    localField: 'userId',
+    foreignField: 'id',
+    justOne: true,
+});
+
+CommentSchema.virtual('target', {
+    ref: function () {
+        if (this.type === 'novel') {
+            return 'Novel';
+        } else if (this.type === 'novel-chapter') {
+            return 'NovelChapter';
+        } else if (this.type === 'manga') {
+            return 'Manga';
+        } else if (this.type === 'manga-chapter') {
+            return 'MangaChapter';
+        }
+    },
+    localField: 'targetId',
+    foreignField: 'id',
+    justOne: true,
+});
+
+CommentSchema.pre('save', function (next) {
+    // add id to Novel/Manga/NovelChapter/MangaChapter
+    if (!this.isNew) {
+        return next();
+    }
+    if (this.type === 'novel') {
+        mongoose.model('Novel').findOneAndUpdate({ id: this.targetId }, { $push: { comments: this._id } }, { new: true }).exec();
+    } else if (this.type === 'novel-chapter') {
+        mongoose.model('NovelChapter').findOneAndUpdate({ id: this.targetId }, { $push: { comments: this._id } }, { new: true }).exec();
+    } else if (this.type === 'manga') {
+        mongoose.model('Manga').findOneAndUpdate({ id: this.targetId }, { $push: { comments: this._id } }, { new: true }).exec();
+    } else if (this.type === 'manga-chapter') {
+        mongoose.model('MangaChapter').findOneAndUpdate({ id: this.targetId }, { $push: { comments: this._id } }, { new: true }).exec();
+    }
+    next();
+});
+
+CommentSchema.set('toObject', { virtuals: true });
+CommentSchema.set('toJSON', { virtuals: true });
 
 const Comment = mongoose.model('Comment', CommentSchema, 'comments');
 const Tag = mongoose.model('Tag', TagSchema, 'tags');

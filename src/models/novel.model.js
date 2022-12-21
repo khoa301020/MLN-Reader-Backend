@@ -58,7 +58,7 @@ const novelChapterSchema = new mongoose.Schema({
     },
     hakoUrl: {
         type: String,
-        required: true,
+        required: false,
     },
     title: {
         type: String,
@@ -337,6 +337,20 @@ novelSchema.virtual("ratingSum").get(function () {
         sum += rating.rating;
     });
     return sum;
+});
+
+novelSchema.virtual("uploaderInfo", {
+    ref: "User",
+    localField: "uploader",
+    foreignField: "name",
+    justOne: true,
+});
+
+novelChapterSchema.virtual("sectionInfo", {
+    ref: "NovelSection",
+    localField: "sectionId",
+    foreignField: "id",
+    justOne: true,
 });
 
 // exclude fields
