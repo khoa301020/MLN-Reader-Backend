@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: false,
         trim: true,
-        default: null,
+        default: process.env.DEFAULT_AVATAR,
     },
     email: {
         type: String,
@@ -54,6 +54,7 @@ const userSchema = new mongoose.Schema({
             default: null,
         },
     },
+
     role: {
         type: String,
         required: true,
@@ -66,136 +67,110 @@ const userSchema = new mongoose.Schema({
         required: false,
         default: null,
     },
-    followingNovels: {
-        type: [{
-            novelId: {
-                type: String,
-                required: true,
-            },
-            followedAt: {
-                type: Date,
-                required: true,
-                default: Date.now,
-            },
-        }],
-        required: false,
-        default: []
+
+    uploaded: {
+        novel: {
+            type: [mongoose.Schema.Types.ObjectId],
+            ref: "Novel",
+            required: true,
+            default: [],
+        },
+        manga: {
+            type: [mongoose.Schema.Types.ObjectId],
+            ref: "Manga",
+            required: true,
+            default: [],
+        },
     },
-    followingMangas: {
-        type: [{
-            mangaId: {
-                type: String,
-                required: true,
-            },
-            followedAt: {
-                type: Date,
-                required: true,
-                default: Date.now,
-            },
-        }],
-        required: false,
-        default: []
+
+    chapterUploaded: {
+        novel: {
+            type: [mongoose.Schema.Types.ObjectId],
+            ref: "NovelChapter",
+            required: true,
+            default: [],
+        },
+        manga: {
+            type: [mongoose.Schema.Types.ObjectId],
+            ref: "MangaChapter",
+            required: true,
+            default: [],
+        },
     },
-    ratedNovels: {
-        type: [{
-            novelId: {
-                type: String,
-                required: true,
-            },
-            rating: {
-                type: Number,
-                required: true,
-            },
-            ratedAt: {
-                type: Date,
-                required: true,
-                default: Date.now,
-            },
-        }],
-        required: false,
-        default: []
+
+    following: {
+        novel: {
+            type: [mongoose.Schema.Types.ObjectId],
+            ref: "Novel",
+            required: true,
+            default: [],
+        },
+        manga: {
+            type: [mongoose.Schema.Types.ObjectId],
+            ref: "Manga",
+            required: true,
+            default: [],
+        },
     },
-    ratedMangas: {
-        type: [{
-            mangaId: {
-                type: String,
-                required: true,
+
+    rated: {
+        novel: [
+            {
+                _id: false,
+                id: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Novel",
+                    required: true,
+                },
+                rating: {
+                    type: Number,
+                    required: true,
+                    default: 0,
+                },
             },
-            rating: {
-                type: Number,
-                required: true,
+        ],
+        manga: [
+            {
+                _id: false,
+                id: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Manga",
+                    required: true,
+                },
+                rating: {
+                    type: Number,
+                    required: true,
+                    default: 0,
+                },
             },
-            ratedAt: {
-                type: Date,
-                required: true,
-                default: Date.now,
-            },
-        }],
-        required: false,
-        default: []
+        ],
     },
-    novelHistory: {
-        type: [{
-            novelId: {
-                type: String,
-                required: true,
+
+    history: {
+        novel: [
+            {
+                _id: false,
+                novelId: String,
+                novelTitle: String,
+                novelCover: String,
+                chapterId: String,
+                chapterTitle: String,
+                lastRead: Date,
             },
-            novelCover: {
-                type: String,
-                required: true,
+        ],
+        manga: [
+            {
+                _id: false,
+                mangaId: String,
+                mangaTitle: String,
+                mangaCover: String,
+                chapterId: String,
+                chapterTitle: String,
+                lastRead: Date,
             },
-            novelTitle: {
-                type: String,
-                required: true,
-            },
-            chapterId: {
-                type: String,
-                required: true,
-            },
-            chapterTitle: {
-                type: String,
-                required: true,
-            },
-            readAt: {
-                type: Date,
-                required: true,
-                default: Date.now,
-            },
-        }],
-        required: false,
-        default: []
+        ],
     },
-    mangaHistory: {
-        type: [{
-            mangaId: {
-                type: String,
-                required: true,
-            },
-            mangaCover: {
-                type: String,
-                required: true,
-            },
-            mangaTitle: {
-                type: String,
-                required: true,
-            },
-            chapterId: {
-                type: String,
-                required: true,
-            },
-            chapterTitle: {
-                type: String,
-                required: true,
-            },
-            readAt: {
-                type: Date,
-                required: true,
-                default: Date.now,
-            },
-        }],
-        required: false,
-        default: []
-    },
+
     createdAt: {
         type: Date,
         default: Date.now,

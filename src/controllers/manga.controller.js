@@ -196,7 +196,7 @@ const CreateManga = (req, res) => {
             otherNames: req.body.otherNames ? JSON.parse(req.body.otherNames) : [],
             description: req.body.description,
             uploader: req.body.uploader,
-            tags: JSON.parse(req.body.tags),
+            tags: req.body.tags ? JSON.parse(req.body.tags) : [],
         });
 
         if (req.file) {
@@ -515,12 +515,13 @@ const AddHistory = (req, res) => {
             mangaCover: req.body.mangaCover,
             chapterId: req.body.chapterId,
             chapterTitle: req.body.chapterTitle,
+            lastRead: Date.now(),
         }
 
         let checkExist = false;
 
         // Check if manga is already in history
-        for (let history of user.mangaHistory) {
+        for (let history of user.history.manga) {
             if (history.mangaId === req.body.mangaId) {
                 checkExist = true;
                 // Only update chapter if it's different
@@ -534,10 +535,10 @@ const AddHistory = (req, res) => {
         };
 
         if (!checkExist) {
-            user.mangaHistory.push(newHistory);
+            user.history.manga.push(newHistory);
         }
 
-        user.markModified("mangaHistory");
+        user.markModified("history.manga");
 
         user.save((err) => {
             if (err) return res.error({ message: "Add history failed", errors: err });
@@ -553,7 +554,7 @@ const GetHistory = (req, res) => {
         if (err) return res.internal({ message: "Error occurred", errors: err });
         if (!user) return res.error({ message: "User not found" });
 
-        res.success({ message: "History found", result: user.mangaHistory.slice(0, 10) });
+        res.success({ message: "History found", result: user.history.manga.slice(0, 10) });
     });
 };
 

@@ -510,12 +510,13 @@ const AddHistory = (req, res) => {
             novelCover: req.body.novelCover,
             chapterId: req.body.chapterId,
             chapterTitle: req.body.chapterTitle,
+            lastRead: Date.now(),
         }
 
         let checkExist = false;
 
         // Check if novel is already in history
-        for (let history of user.novelHistory) {
+        for (let history of user.history.novel) {
             if (history.novelId === req.body.novelId) {
                 checkExist = true;
                 // Only update chapter if it's different
@@ -529,10 +530,10 @@ const AddHistory = (req, res) => {
         };
 
         if (!checkExist) {
-            user.novelHistory.push(newHistory);
+            user.history.novel.push(newHistory);
         }
 
-        user.markModified("novelHistory");
+        user.markModified("history");
 
         user.save((err) => {
             if (err) return res.error({ message: "Add history failed", errors: err });
@@ -548,7 +549,7 @@ const GetHistory = (req, res) => {
         if (err) return res.internal({ message: "Error occurred", errors: err });
         if (!user) return res.error({ message: "User not found" });
 
-        res.success({ message: "History found", result: user.novelHistory.slice(0, 10) });
+        res.success({ message: "History found", result: user.history.novel.slice(0, 10) });
     });
 };
 

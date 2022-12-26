@@ -21,4 +21,9 @@ const getCurrent = () => {
 const capitalizeFirstLetter = (string) => {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
-export { capitalizeFirstLetter, removeEmpty, getCurrent };
+
+const datetimeAsInteger = (date) => {
+    return new Date(date).getTime();
+}
+
+export { capitalizeFirstLetter, removeEmpty, getCurrent, datetimeAsInteger };

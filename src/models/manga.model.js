@@ -271,14 +271,14 @@ mangaSchema.virtual("followersCount").get(function () {
     return this.followers?.length;
 });
 
-mangaSchema.virtual("ratingSum").get(function () {
-    // return sum of rating
-    let sum = 0;
-    this.rating?.forEach((rating) => {
-        sum += rating.rating;
-    });
-    return sum;
-});
+// mangaSchema.virtual("ratingSum").get(function () {
+//     // return sum of rating
+//     let sum = 0;
+//     this.rating?.forEach((rating) => {
+//         sum += rating.rating;
+//     });
+//     return sum;
+// });
 
 mangaSchema.virtual("uploaderInfo", {
     ref: "User",
