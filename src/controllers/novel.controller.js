@@ -1,8 +1,9 @@
+
 import path from 'path';
 import _const from "../constants/const.js";
 import * as Helper from "../helper/helper.js";
 import bucket from '../libs/GCP-Storage.js';
-import { SystemStatus } from "../models/common.model.js";
+import { SystemStatus, Tag } from "../models/common.model.js";
 import { Chapter, Note, Novel, Section } from "../models/novel.model.js";
 import User from "../models/user.model.js";
 
@@ -28,12 +29,20 @@ const GetLastUpdate = async (req, res) => {
         select: 'id title createdAt',
         options: { lean: true },
     })
-        .select(select).exec((err, novels) => {
+        .select(select).exec(async (err, novels) => {
             if (err) return res.error({ message: "Get last update failed", errors: err });
 
             novels = novels.filter(novel => novel.lastChapter);
             novels.sort((a, b) => Helper.datetimeAsInteger(b.lastChapter ? b.lastChapter.createdAt : b.createdAt) - Helper.datetimeAsInteger(a.lastChapter ? a.lastChapter.createdAt : a.createdAt));
-            res.success({ message: "Get last update successfully", result: limit ? novels.slice(0, limit) : novels });
+
+            const tags = await Tag.find({
+                $or: [
+                    { type: 'novel' },
+                    { type: 'both' }
+                ]
+            }).select('-_id code name');
+
+            res.success({ message: "Get last update successfully", result: { novels: limit ? novels.slice(0, limit) : novels, tags } });
         });
 };
 

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import _const from '../constants/const.js';
 import * as Helper from "../helper/helper.js";
 import bucket from '../libs/GCP-Storage.js';
-import { SystemStatus } from '../models/common.model.js';
+import { SystemStatus, Tag } from '../models/common.model.js';
 import { Chapter, Manga, Section } from '../models/manga.model.js';
 import User from '../models/user.model.js';
 
@@ -33,11 +33,19 @@ const GetLastUpdate = async (req, res) => {
         select: 'id title createdAt',
         options: { lean: true },
     })
-        .select(select).exec((err, mangas) => {
+        .select(select).exec(async (err, mangas) => {
             if (err) return res.error({ message: "Get last update failed", errors: err });
 
             mangas.sort((a, b) => Helper.datetimeAsInteger(b.lastChapter ? b.lastChapter.createdAt : b.createdAt) - Helper.datetimeAsInteger(a.lastChapter ? a.lastChapter.createdAt : a.createdAt));
-            res.success({ message: "Get last update successfully", result: limit ? mangas.slice(0, limit) : mangas });
+
+            const tags = await Tag.find({
+                $or: [
+                    { type: 'manga' },
+                    { type: 'both' }
+                ]
+            }).select('-_id code name');
+
+            res.success({ message: "Get last update successfully", result: { mangas: limit ? mangas.slice(0, limit) : mangas, tags } });
         });
 };
 
