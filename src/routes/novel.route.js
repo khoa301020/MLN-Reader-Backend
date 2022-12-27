@@ -3,8 +3,7 @@ import multer from "multer";
 
 import {
     AddHistory, CreateAction, DeleteAction,
-    FollowAction, GetChapter, GetHistory,
-    GetNovel, GetNovelList, GetNovelUpdate,
+    FollowAction, GetChapter, GetHistory, GetLastUpdate, GetNovel, GetNovelList, GetNovelUpdate,
     GetSection, UpdateAction
 } from "../controllers/novel.controller.js";
 
@@ -45,5 +44,8 @@ router.post("/add-history", AddHistory);
 
 // get history
 router.get("/get-history", GetHistory);
+
+// get last update
+router.get("/get-last-update", GetLastUpdate);
 
 export default router;

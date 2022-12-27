@@ -1,6 +1,6 @@
 import express from "express";
 import { GetNewestComments, GetTags, TagAction } from "../controllers/admin.controller.js";
-import { CommentAction, GetBothHistory, GetBothLatest, GetUser } from "../controllers/user.controller.js";
+import { CommentAction, GetBothHistory, GetCompletedBooks, GetNewestBooks, GetUser } from "../controllers/user.controller.js";
 
 const router = express.Router();
 
@@ -23,6 +23,9 @@ router.get("/get-user", GetUser);
 router.get("/get-history", GetBothHistory);
 
 // get latest
-router.get("/get-latest", GetBothLatest);
+router.get("/get-latest", GetNewestBooks);
+
+// get completed
+router.get("/get-completed", GetCompletedBooks);
 
 export default router;

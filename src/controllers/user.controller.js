@@ -141,15 +141,50 @@ const GetBothHistory = (req, res) => {
     });
 };
 
-const GetBothLatest = async (req, res) => {
-    var latestNovels = await Novel.find({}).sort({ createdAt: -1 }).select('id title cover description createdAt').limit(10);
-    var latestMangas = await Manga.find({}).sort({ createdAt: -1 }).select('id title cover description createdAt').limit(10);
+const GetNewestBooks = async (req, res) => {
+    const limit = req.query.limit || null;
+    var newestNovels = await Novel.find({})
+        .sort({ createdAt: -1 })
+        .populate('chapterCount')
+        .populate({
+            path: 'lastChapter',
+            select: 'id title createdAt',
+            options: { sort: { createdAt: -1 }, lean: true },
+        })
+        .select('id title cover description tags type createdAt');
+    var newestMangas = await Manga.find({})
+        .sort({ createdAt: -1 })
+        .populate('chapterCount')
+        .populate({
+            path: 'lastChapter',
+            select: 'id title createdAt',
+            options: { sort: { createdAt: -1 }, lean: true },
+        })
+        .select('id title cover description tags type createdAt');
 
-    const latestBooks = [...latestNovels, ...latestMangas];
+    const newestBooks = [...newestNovels, ...newestMangas];
 
-    latestBooks.sort((a, b) => Helper.datetimeAsInteger(b.createdAt) - Helper.datetimeAsInteger(a.createdAt));
+    newestBooks.sort((a, b) => Helper.datetimeAsInteger(b.createdAt) - Helper.datetimeAsInteger(a.createdAt));
 
-    return res.success({ message: "Latest books found", result: latestBooks.slice(0, 6) });
+    return res.success({ message: "Latest books found", result: limit ? newestBooks.slice(0, limit) : newestBooks });
 };
 
-export { CommentAction, GetUser, GetBothHistory, GetBothLatest };
+const GetCompletedBooks = async (req, res) => {
+    const novels = await Novel.aggregate([
+        { $match: { status: 'Đã hoàn thành' } },
+        { $sample: { size: 8 } },
+        { $project: { id: 1, title: 1, cover: 1 } },
+        { $addFields: { type: 'novel' } },
+    ]);
+
+    const mangas = await Manga.aggregate([
+        { $match: { status: 'Đã hoàn thành' } },
+        { $sample: { size: 8 } },
+        { $project: { id: 1, title: 1, cover: 1 } },
+        { $addFields: { type: 'manga' } }
+
+    ]);
+
+    return res.success({ message: "Completed books found", result: { novels, mangas } });
+};
+export { CommentAction, GetUser, GetBothHistory, GetNewestBooks, GetCompletedBooks };

@@ -2,8 +2,7 @@ import express from "express";
 import multer from 'multer';
 import {
     AddHistory, CreateChapter, CreateManga,
-    CreateSection, GetChapter, GetHistory,
-    GetManga, GetMangaList, GetMangaUpdate,
+    CreateSection, GetChapter, GetHistory, GetLastUpdate, GetManga, GetMangaList, GetMangaUpdate,
     GetSection, UpdateChapter, UpdateManga, UpdateSection
 } from "../controllers/manga.controller.js";
 
@@ -51,5 +50,8 @@ router.post("/add-history", AddHistory);
 
 // get history
 router.get("/get-history", GetHistory);
+
+// get last update
+router.get("/get-last-update", GetLastUpdate);
 
 export default router;

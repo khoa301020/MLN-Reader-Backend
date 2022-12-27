@@ -19,6 +19,24 @@ const GetNovelList = async (req, res) => {
     });
 };
 
+const GetLastUpdate = async (req, res) => {
+    const limit = req.query.limit || null;
+    const select = "id title cover description tags";
+
+    Novel.find({}).populate({
+        path: 'lastChapter',
+        select: 'id title createdAt',
+        options: { lean: true },
+    })
+        .select(select).exec((err, novels) => {
+            if (err) return res.error({ message: "Get last update failed", errors: err });
+
+            novels = novels.filter(novel => novel.lastChapter);
+            novels.sort((a, b) => Helper.datetimeAsInteger(b.lastChapter ? b.lastChapter.createdAt : b.createdAt) - Helper.datetimeAsInteger(a.lastChapter ? a.lastChapter.createdAt : a.createdAt));
+            res.success({ message: "Get last update successfully", result: limit ? novels.slice(0, limit) : novels });
+        });
+};
+
 const GetNovel = (req, res) => {
     if (!req.query.novelId) return res.error({ message: "Novel id is required" });
 
@@ -553,5 +571,5 @@ const GetHistory = (req, res) => {
     });
 };
 
-export { GetNovelList, GetNovel, GetChapter, CreateAction, UpdateAction, DeleteAction, FollowAction, AddHistory, GetHistory, GetNovelUpdate, GetSection };
+export { GetNovelList, GetNovel, GetChapter, CreateAction, UpdateAction, DeleteAction, FollowAction, AddHistory, GetHistory, GetNovelUpdate, GetSection, GetLastUpdate };
 

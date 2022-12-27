@@ -24,6 +24,23 @@ const GetMangaList = async (req, res) => {
     });
 };
 
+const GetLastUpdate = async (req, res) => {
+    const limit = req.query.limit || 0;
+    const select = "id title cover description tags createdAt";
+
+    Manga.find({}).populate({
+        path: 'lastChapter',
+        select: 'id title createdAt',
+        options: { lean: true },
+    })
+        .select(select).exec((err, mangas) => {
+            if (err) return res.error({ message: "Get last update failed", errors: err });
+
+            mangas.sort((a, b) => Helper.datetimeAsInteger(b.lastChapter ? b.lastChapter.createdAt : b.createdAt) - Helper.datetimeAsInteger(a.lastChapter ? a.lastChapter.createdAt : a.createdAt));
+            res.success({ message: "Get last update successfully", result: limit ? mangas.slice(0, limit) : mangas });
+        });
+};
+
 const GetChapter = (req, res) => {
     if (!req.query.chapterId) return res.error({ message: "Chapter id is required" });
 
@@ -558,5 +575,5 @@ const GetHistory = (req, res) => {
     });
 };
 
-export { GetMangaList, GetManga, CreateManga, CreateSection, CreateChapter, GetChapter, AddHistory, GetHistory, GetMangaUpdate, GetSection, UpdateSection, UpdateChapter, UpdateManga };
+export { GetMangaList, GetManga, CreateManga, CreateSection, CreateChapter, GetChapter, AddHistory, GetHistory, GetMangaUpdate, GetSection, UpdateSection, UpdateChapter, UpdateManga, GetLastUpdate };
 

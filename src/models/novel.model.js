@@ -204,6 +204,13 @@ const novelSchema = new mongoose.Schema({
         required: true,
     },
 
+    // lastChapter: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "NovelChapter",
+    //     required: false,
+    //     default: null,
+    // },
+
     tags: {
         _id: false,
         type: [{
@@ -328,6 +335,26 @@ novelNoteSchema.pre("find", function () {
 
 novelSchema.virtual("followersCount").get(function () {
     return this.followers?.length;
+});
+
+novelSchema.virtual("type").get(function () {
+    return "novel";
+});
+
+novelSchema.virtual("lastChapter", {
+    ref: "NovelChapter",
+    localField: "id",
+    foreignField: "novelId",
+    sort: { createdAt: -1 },
+    justOne: true,
+    match: { deletedAt: null },
+});
+
+novelSchema.virtual("chapterCount", {
+    ref: "NovelChapter",
+    localField: "id",
+    foreignField: "novelId",
+    count: true,
 });
 
 // novelSchema.virtual("ratingSum").get(function () {

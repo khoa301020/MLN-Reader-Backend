@@ -271,6 +271,25 @@ mangaSchema.virtual("followersCount").get(function () {
     return this.followers?.length;
 });
 
+mangaSchema.virtual("type").get(function () {
+    return "manga";
+});
+
+mangaSchema.virtual("lastChapter", {
+    ref: "MangaChapter",
+    localField: "id",
+    foreignField: "mangaId",
+    justOne: true,
+    match: { deletedAt: null },
+});
+
+mangaSchema.virtual("chapterCount", {
+    ref: "MangaChapter",
+    localField: "id",
+    foreignField: "mangaId",
+    count: true,
+});
+
 // mangaSchema.virtual("ratingSum").get(function () {
 //     // return sum of rating
 //     let sum = 0;
