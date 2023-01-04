@@ -6,7 +6,8 @@
     "scripts": {
         "start": "node src/server.js",
         "dev": "nodemon src/server.js",
-        "importer": "node src/utils/importer.js"
+        "importer": "node src/utils/importer.js",
+        "runcmd": "node crawler/readJson.js"
     },
     "author": "Beast666",
     "license": "ISC",

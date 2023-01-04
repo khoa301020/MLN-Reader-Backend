@@ -1,5 +1,6 @@
 import express from "express";
 import { BookVerify, GetAll, Login, Logout, Register, Verify } from "../controllers/auth.controller.js";
+import { GetSelf } from "../controllers/user.controller.js";
 
 const router = express.Router();
 
@@ -22,6 +23,6 @@ router.post("/book-verify", BookVerify);
 router.post("/logout", Logout);
 
 // get current user
-router.get("/me",);
+router.get("/me", GetSelf);
 
 export default router;
