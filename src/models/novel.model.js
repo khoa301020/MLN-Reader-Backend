@@ -353,15 +353,6 @@ novelSchema.virtual("chapterCount", {
   count: true,
 });
 
-// novelSchema.virtual("ratingSum").get(function () {
-//     // return sum of rating
-//     let sum = 0;
-//     this.rating?.forEach((rating) => {
-//         sum += rating.rating;
-//     });
-//     return sum;
-// });
-
 novelSchema.virtual("uploaderInfo", {
   ref: "User",
   localField: "uploader",
