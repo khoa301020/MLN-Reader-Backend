@@ -19,32 +19,36 @@ const mangaChapterSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  pages: [{
-    type: {
-      _id: false,
-      pageNumber: {
-        type: Number,
-        required: true,
+  pages: [
+    {
+      type: {
+        _id: false,
+        pageNumber: {
+          type: Number,
+          required: true,
+        },
+        pageUrl: {
+          type: String,
+          required: true,
+        },
       },
-      pageUrl: {
-        type: String,
-        required: true,
-      },
+      required: true,
+      default: [],
     },
-    required: true,
-    default: [],
-  }],
+  ],
   viewCount: {
     type: Number,
     required: true,
     default: 0,
   },
-  comments: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Comment",
-    required: true,
-    default: [],
-  }],
+  comments: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Comment",
+      required: true,
+      default: [],
+    },
+  ],
   creator: {
     type: String,
     required: true,
@@ -85,12 +89,14 @@ const mangaSectionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  chapters: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "MangaChapter",
-    required: true,
-    default: [],
-  }],
+  chapters: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "MangaChapter",
+      required: true,
+      default: [],
+    },
+  ],
   createdAt: {
     type: Date,
     required: true,
@@ -155,69 +161,42 @@ const mangaSchema = new mongoose.Schema({
 
   tags: {
     _id: false,
-    type: [{
-      code: {
-        type: String,
-        required: true,
+    type: [
+      {
+        code: {
+          type: String,
+          required: true,
+        },
+        name: {
+          type: String,
+          required: true,
+        },
       },
-      name: {
-        type: String,
-        required: true,
-      },
-    }],
+    ],
     required: true,
   },
 
   followers: {
-    _id: false,
-    type: [{
-      userId: {
-        type: Number,
-        required: true,
-      },
-      followedAt: {
-        type: Date,
-        required: true,
-        default: Date.now,
-      },
-    }],
-    required: false,
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: "User",
+    required: true,
     default: [],
   },
 
-  rating: {
-    _id: false,
-    type: [{
-      userId: {
-        type: Number,
-        required: true,
-      },
-      rating: {
-        type: Number,
-        required: true,
-      },
-      ratedAt: {
-        type: Date,
-        required: true,
-        default: Date.now,
-      },
-    }],
-    required: false,
-    default: [],
-  },
-
-  sections: [{
-    type: mongoose.Schema.Types.ObjectId,
+  sections: {
+    type: [mongoose.Schema.Types.ObjectId],
     ref: "MangaSection",
     required: true,
     default: [],
-  }],
-  comments: [{
-    type: mongoose.Schema.Types.ObjectId,
+  },
+
+  comments: {
+    type: [mongoose.Schema.Types.ObjectId],
     ref: "Comment",
     required: true,
     default: [],
-  }],
+  },
+
   statistics: {
     _id: false,
     totalView: {
@@ -241,6 +220,7 @@ const mangaSchema = new mongoose.Schema({
       default: {},
     },
   },
+
   createdAt: {
     type: Date,
     required: true,
@@ -319,35 +299,20 @@ mangaChapterSchema.virtual("sectionInfo", {
 
 // exclude fields
 
-mangaSchema.set("toJSON", {
-  virtuals: true, transform(doc, ret) {
-    delete ret._id;
-    delete ret.__v;
-    delete ret.deletedAt;
-    delete ret.followers;
-    delete ret.rating;
-  }
-});
-mangaSectionSchema.set("toObject", { virtuals: true });
-mangaSectionSchema.set("toJSON", {
-  virtuals: true, transform(doc, ret) {
-    delete ret._id;
-    delete ret.__v;
-    delete ret.deletedAt;
-  }
-});
-mangaChapterSchema.set("toObject", { virtuals: true });
-mangaChapterSchema.set("toJSON", {
-  virtuals: true, transform(doc, ret) {
-    delete ret._id;
-    delete ret.__v;
-    delete ret.deletedAt;
-  }
-});
+mangaSchema.set("toJSON", { virtuals: true });
+mangaSectionSchema.set("toJSON", { virtuals: true });
+mangaChapterSchema.set("toJSON", { virtuals: true });
 
 const Manga = mongoose.model("Manga", mangaSchema, "mangas");
-const Chapter = mongoose.model("MangaChapter", mangaChapterSchema, "mangaChapters");
-const Section = mongoose.model("MangaSection", mangaSectionSchema, "mangaSections");
+const Chapter = mongoose.model(
+  "MangaChapter",
+  mangaChapterSchema,
+  "mangaChapters"
+);
+const Section = mongoose.model(
+  "MangaSection",
+  mangaSectionSchema,
+  "mangaSections"
+);
 
 export { Manga, Chapter, Section };
-

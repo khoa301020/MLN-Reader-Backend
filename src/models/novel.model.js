@@ -67,12 +67,14 @@ const novelChapterSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  notes: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "NovelNote",
-    required: true,
-    default: [],
-  }],
+  notes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "NovelNote",
+      required: true,
+      default: [],
+    },
+  ],
   wordCount: {
     type: Number,
     required: true,
@@ -82,12 +84,14 @@ const novelChapterSchema = new mongoose.Schema({
     required: true,
     default: 0,
   },
-  comments: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Comment",
-    required: true,
-    default: [],
-  }],
+  comments: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Comment",
+      required: true,
+      default: [],
+    },
+  ],
   creator: {
     type: String,
     required: true,
@@ -132,12 +136,14 @@ const novelSectionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  chapters: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "NovelChapter",
-    required: true,
-    default: [],
-  }],
+  chapters: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "NovelChapter",
+      required: true,
+      default: [],
+    },
+  ],
   createdAt: {
     type: Date,
     required: true,
@@ -209,69 +215,42 @@ const novelSchema = new mongoose.Schema({
 
   tags: {
     _id: false,
-    type: [{
-      code: {
-        type: String,
-        required: true,
+    type: [
+      {
+        code: {
+          type: String,
+          required: true,
+        },
+        name: {
+          type: String,
+          required: true,
+        },
       },
-      name: {
-        type: String,
-        required: true,
-      },
-    }],
+    ],
     required: true,
   },
 
   followers: {
-    _id: false,
-    type: [{
-      userId: {
-        type: Number,
-        required: true,
-      },
-      followedAt: {
-        type: Date,
-        required: true,
-        default: Date.now,
-      },
-    }],
-    required: false,
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: "User",
+    required: true,
     default: [],
   },
 
-  rating: {
-    _id: false,
-    type: [{
-      userId: {
-        type: Number,
-        required: true,
-      },
-      rating: {
-        type: Number,
-        required: true,
-      },
-      ratedAt: {
-        type: Date,
-        required: true,
-        default: Date.now,
-      },
-    }],
-    required: false,
-    default: [],
-  },
-
-  sections: [{
-    type: mongoose.Schema.Types.ObjectId,
+  sections: {
+    type: [mongoose.Schema.Types.ObjectId],
     ref: "NovelSection",
     required: true,
     default: [],
-  }],
-  comments: [{
-    type: mongoose.Schema.Types.ObjectId,
+  },
+
+  comments: {
+    type: [mongoose.Schema.Types.ObjectId],
     ref: "Comment",
     required: true,
     default: [],
-  }],
+  },
+
   statistics: {
     _id: false,
     totalView: {
@@ -295,6 +274,7 @@ const novelSchema = new mongoose.Schema({
       default: {},
     },
   },
+
   createdAt: {
     type: Date,
     required: true,
@@ -377,39 +357,21 @@ novelNoteSchema.set("toJSON", {
   },
 });
 
-novelSchema.set("toJSON", {
-  virtuals: true, transform(doc, ret) {
-    delete ret._id;
-    delete ret.hakoId;
-    delete ret.__v;
-    delete ret.deletedAt;
-    delete ret.followers;
-    delete ret.rating;
-  }
-});
-novelSectionSchema.set("toObject", { virtuals: true });
-novelSectionSchema.set("toJSON", {
-  virtuals: true, transform(doc, ret) {
-    delete ret._id;
-    delete ret.hakoId;
-    delete ret.__v;
-    delete ret.deletedAt;
-  }
-});
-novelChapterSchema.set("toObject", { virtuals: true });
-novelChapterSchema.set("toJSON", {
-  virtuals: true, transform(doc, ret) {
-    delete ret._id;
-    delete ret.hakoId;
-    delete ret.__v;
-    delete ret.deletedAt;
-  }
-});
+novelSchema.set("toJSON", { virtuals: true });
+novelSectionSchema.set("toJSON", { virtuals: true });
+novelChapterSchema.set("toJSON", { virtuals: true });
 
 const Note = mongoose.model("NovelNote", novelNoteSchema, "novelNotes");
-const Chapter = mongoose.model("NovelChapter", novelChapterSchema, "novelChapters");
-const Section = mongoose.model("NovelSection", novelSectionSchema, "novelSections");
+const Chapter = mongoose.model(
+  "NovelChapter",
+  novelChapterSchema,
+  "novelChapters"
+);
+const Section = mongoose.model(
+  "NovelSection",
+  novelSectionSchema,
+  "novelSections"
+);
 const Novel = mongoose.model("Novel", novelSchema, "novels");
 
 export { Note, Chapter, Section, Novel };
-
