@@ -33,27 +33,10 @@ const GetNovelList = async (req, res) => {
 };
 
 const GetLastUpdate = async (req, res) => {
-  const search = decodeURI(req.query.search) || null;
   const limit = req.query.limit || null;
   const select = "id title cover description tags";
 
-  let query;
-  if (search) {
-    console.log(search);
-    query = Novel.find({
-      $or: [
-        { title: { $regex: search, $options: "i" } },
-        { otherNames: { $regex: search, $options: "i" } },
-        { author: { $regex: search, $options: "i" } },
-        { artist: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-      ],
-    });
-  } else {
-    query = Novel.find({});
-  }
-
-  query
+  Novel.find({})
     .populate({
       path: "lastChapter",
       select: "id title createdAt",
