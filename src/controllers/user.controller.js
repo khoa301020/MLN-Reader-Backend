@@ -190,7 +190,24 @@ const GetBothHistory = (req, res) => {
 
 const GetNewestBooks = async (req, res) => {
   const limit = req.query.limit || null;
-  var newestNovels = await Novel.find({})
+  const keyword = req.query.keyword || null;
+  let query;
+  if (keyword) {
+    console.log(decodeURI(keyword));
+    query = {
+      $or: [
+        { title: { $regex: keyword, $options: "i" } },
+        { otherNames: { $regex: keyword, $options: "i" } },
+        { author: { $regex: keyword, $options: "i" } },
+        { artist: { $regex: keyword, $options: "i" } },
+        { description: { $regex: keyword, $options: "i" } },
+      ],
+    };
+  } else {
+    query = {};
+  }
+
+  var newestNovels = await Novel.find(query)
     .sort({ createdAt: -1 })
     .populate("chapterCount")
     .populate({
@@ -199,7 +216,8 @@ const GetNewestBooks = async (req, res) => {
       options: { sort: { createdAt: -1 }, lean: true },
     })
     .select("id title cover description tags type createdAt");
-  var newestMangas = await Manga.find({})
+
+  var newestMangas = await Manga.find(query)
     .sort({ createdAt: -1 })
     .populate("chapterCount")
     .populate({
