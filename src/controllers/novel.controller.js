@@ -80,11 +80,11 @@ const GetNovel = (req, res) => {
 
   let find;
   if (req.query.isOnly === "true") {
-    find = Novel.findOne({ id: req.query.novelId }).select(
+    find = Novel.findOne({ id: req.query.novelId, deletedAt: null }).select(
       "id title otherNames author artist status tags cover description"
     );
   } else {
-    find = Novel.findOne({ id: req.query.novelId })
+    find = Novel.findOne({ id: req.query.novelId, deletedAt: null })
       .populate("uploaderInfo", "-_id id name avatar")
       .populate({
         path: "comments",
@@ -110,7 +110,7 @@ const GetNovel = (req, res) => {
 
 const GetNovelUpdate = (req, res) => {
   if (!req.query.novelId) return res.error({ message: "Novel id is required" });
-  Novel.findOne({ id: req.query.novelId })
+  Novel.findOne({ id: req.query.novelId, deletedAt: null })
     .select("id title")
     .populate({
       path: "sections",
@@ -163,8 +163,8 @@ const GetSection = (req, res) => {
   if (!req.query.sectionId)
     return res.error({ message: "Section id is required" });
 
-  Section.findOne({ id: req.query.sectionId })
-    .select("id novelId name cover")
+  Section.findOne({ id: req.query.sectionId, deletedAt: null })
+    .select("id novelId name cover deletedAt")
     .exec((err, section) => {
       if (err)
         return res.error({
@@ -184,7 +184,7 @@ const GetChapter = (req, res) => {
   if (!req.query.chapterId)
     return res.error({ message: "Chapter id is required" });
 
-  Chapter.findOne({ id: req.query.chapterId })
+  Chapter.findOne({ id: req.query.chapterId, deletedAt: null })
     .populate("sectionInfo", "-_id id name cover")
     .populate({
       path: "comments",

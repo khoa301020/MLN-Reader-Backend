@@ -368,7 +368,7 @@ const CheckFollow = (req, res) => {
     Book.findOne({ id: bookId }).exec(function (err, book) {
       if (err) return res.error(err);
 
-      if (book.followers?.length > 0 && book.followers?.includes(user._id)) {
+      if (book?.followers?.length > 0 && book?.followers?.includes(user._id)) {
         return res.success({ message: "Following" });
       } else {
         return res.success({ message: "Not following" });

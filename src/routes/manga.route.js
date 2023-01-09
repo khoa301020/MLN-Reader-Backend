@@ -1,14 +1,34 @@
 import express from "express";
-import multer from 'multer';
+import multer from "multer";
 import {
-    AddHistory, CreateChapter, CreateManga,
-    CreateSection, GetChapter, GetHistory, GetLastUpdate, GetManga, GetMangaList, GetMangaUpdate,
-    GetSection, UpdateChapter, UpdateManga, UpdateSection
+  AddHistory,
+  CreateChapter,
+  CreateManga,
+  CreateSection,
+  DeleteChapter,
+  DeleteManga,
+  DeleteSection,
+  GetChapter,
+  GetHistory,
+  GetLastUpdate,
+  GetManga,
+  GetMangaList,
+  GetMangaUpdate,
+  GetSection,
+  RestoreChapter,
+  RestoreManga,
+  RestoreSection,
+  UpdateChapter,
+  UpdateManga,
+  UpdateSection,
 } from "../controllers/manga.controller.js";
+import { ValidatePermission } from "../validations/manga.validation.js";
 
-const chapterupload = multer({ storage: multer.memoryStorage() }).single('chapter');
+const chapterupload = multer({ storage: multer.memoryStorage() }).single(
+  "chapter"
+);
 
-const coverupload = multer({ storage: multer.memoryStorage() }).single('cover');
+const coverupload = multer({ storage: multer.memoryStorage() }).single("cover");
 
 const router = express.Router();
 
@@ -53,5 +73,23 @@ router.get("/get-history", GetHistory);
 
 // get last update
 router.get("/get-last-update", GetLastUpdate);
+
+// delete manga
+router.post("/delete-manga", ValidatePermission, DeleteManga);
+
+// delete section
+router.post("/delete-section", ValidatePermission, DeleteSection);
+
+// delete chapter
+router.post("/delete-chapter", ValidatePermission, DeleteChapter);
+
+// restore manga
+router.post("/restore-manga", ValidatePermission, RestoreManga);
+
+// restore section
+router.post("/restore-section", ValidatePermission, RestoreSection);
+
+// restore chapter
+router.post("/restore-chapter", ValidatePermission, RestoreChapter);
 
 export default router;
