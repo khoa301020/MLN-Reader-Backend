@@ -347,15 +347,51 @@ novelChapterSchema.virtual("sectionInfo", {
   justOne: true,
 });
 
-// exclude fields
-novelNoteSchema.set("toJSON", {
-  transform: (document, returnedObject) => {
-    delete returnedObject._id;
-    delete returnedObject.hakoId;
-    delete returnedObject.__v;
-    delete returnedObject.deletedAt;
-  },
+novelChapterSchema.virtual("novelInfo", {
+  ref: "Novel",
+  localField: "novelId",
+  foreignField: "id",
+  justOne: true,
 });
+
+novelChapterSchema.methods.setPrevNext = async function (id, novelId) {
+  const novel = await mongoose
+    .model("Novel")
+    .findOne({ id: novelId })
+    .select("sections")
+    .populate({
+      path: "sections",
+      select: "chapters",
+      options: {
+        match: {
+          deletedAt: null,
+        },
+      },
+      populate: {
+        path: "chapters",
+        select: "-_id id",
+        options: {
+          match: {
+            deletedAt: null,
+          },
+        },
+      },
+    })
+    .lean();
+
+  let allChapters = novel.sections.reduce((acc, obj) => {
+    return acc.concat(obj.chapters);
+  }, []);
+
+  const index = allChapters.findIndex((item) => item.id === id);
+
+  const nav = {
+    prev: allChapters[index - 1]?.id,
+    next: allChapters[index + 1]?.id,
+  };
+
+  return nav;
+};
 
 novelSchema.set("toJSON", { virtuals: true });
 novelSectionSchema.set("toJSON", { virtuals: true });

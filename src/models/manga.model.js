@@ -114,7 +114,7 @@ const mangaSectionSchema = new mongoose.Schema({
   },
 });
 
-// create novel schema
+// create manga schema
 const mangaSchema = new mongoose.Schema({
   id: {
     type: String,
@@ -296,6 +296,52 @@ mangaChapterSchema.virtual("sectionInfo", {
   foreignField: "id",
   justOne: true,
 });
+
+mangaChapterSchema.virtual("mangaInfo", {
+  ref: "Manga",
+  localField: "mangaId",
+  foreignField: "id",
+  justOne: true,
+});
+
+mangaChapterSchema.methods.setPrevNext = async function (id, mangaId) {
+  const manga = await mongoose
+    .model("Manga")
+    .findOne({ id: mangaId })
+    .select("sections")
+    .populate({
+      path: "sections",
+      select: "chapters",
+      options: {
+        match: {
+          deletedAt: null,
+        },
+      },
+      populate: {
+        path: "chapters",
+        select: "-_id id",
+        options: {
+          match: {
+            deletedAt: null,
+          },
+        },
+      },
+    })
+    .lean();
+
+  let allChapters = manga.sections.reduce((acc, obj) => {
+    return acc.concat(obj.chapters);
+  }, []);
+
+  const index = allChapters.findIndex((item) => item.id === id);
+
+  const nav = {
+    prev: allChapters[index - 1]?.id,
+    next: allChapters[index + 1]?.id,
+  };
+
+  return nav;
+};
 
 // exclude fields
 

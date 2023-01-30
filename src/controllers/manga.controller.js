@@ -84,6 +84,7 @@ const GetChapter = (req, res) => {
     return res.error({ message: "Chapter id is required" });
 
   Chapter.findOne({ id: req.query.chapterId, deletedAt: null })
+    .populate("mangaInfo", "-_id id title cover")
     .populate("sectionInfo", "-_id id name cover")
     .populate({
       path: "comments",
@@ -128,6 +129,8 @@ const GetChapter = (req, res) => {
           }
         );
 
+        const nav = await chapter.setPrevNext(chapter.id, chapter.mangaId);
+
         Manga.findOne({ id: chapter.mangaId }).exec((err, manga) => {
           if (err) console.log(err);
 
@@ -155,10 +158,9 @@ const GetChapter = (req, res) => {
           res.success({
             message: "Get chapter successfully",
             result: {
-              chapter: chapter,
-              mangaTitle: manga.title,
-              mangaCover: manga.cover,
-              sectionTitle: sectionTitle,
+              ...chapter._doc,
+              ...chapter.$$populatedVirtuals,
+              nav,
             },
           });
         });

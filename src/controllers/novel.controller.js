@@ -185,12 +185,8 @@ const GetChapter = (req, res) => {
     return res.error({ message: "Chapter id is required" });
 
   Chapter.findOne({ id: req.query.chapterId, deletedAt: null })
+    .populate("novelInfo", "-_id id title cover")
     .populate("sectionInfo", "-_id id name cover")
-    .populate({
-      path: "comments",
-      select: "-_id id userId content createdAt",
-      populate: { path: "user", select: "-_id id name avatar" },
-    })
     .populate({
       path: "comments",
       select: "-_id id userId content createdAt",
@@ -225,17 +221,18 @@ const GetChapter = (req, res) => {
           result: chapter,
         });
       } else {
-        Chapter.updateOne(
-          { id: chapter.id },
-          { $inc: { "statistics.totalView": 1 } }
-        ).exec((err, chapterUpdate) => {
-          if (err) console.log(err);
-          if (err)
-            return res.error({
-              message: "Get chapter failed",
-              errors: err,
-            });
-        });
+        Chapter.updateOne({ id: chapter.id }, { $inc: { viewCount: 1 } }).exec(
+          (err, chapterUpdate) => {
+            if (err) console.log(err);
+            if (err)
+              return res.error({
+                message: "Get chapter failed",
+                errors: err,
+              });
+          }
+        );
+
+        const nav = await chapter.setPrevNext(chapter.id, chapter.novelId);
 
         Novel.findOne({ id: chapter.novelId }).exec((err, novel) => {
           if (err) console.log(err);
@@ -264,10 +261,9 @@ const GetChapter = (req, res) => {
           res.success({
             message: "Get chapter successfully",
             result: {
-              chapter: chapter,
-              novelTitle: novel.title,
-              novelCover: novel.cover,
-              sectionTitle: sectionTitle,
+              ...chapter._doc,
+              ...chapter.$$populatedVirtuals,
+              nav,
             },
           });
         });
