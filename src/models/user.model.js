@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    unique: true,
     trim: true,
   },
   avatar: {
@@ -22,6 +23,12 @@ const userSchema = new mongoose.Schema({
     required: false,
     trim: true,
     default: process.env.DEFAULT_AVATAR,
+  },
+  cover: {
+    type: String,
+    required: false,
+    trim: true,
+    default: null,
   },
   email: {
     type: String,

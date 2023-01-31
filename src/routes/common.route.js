@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import {
   GetNewestComments,
   GetTags,
@@ -12,7 +13,13 @@ import {
   GetCompletedBooks,
   GetNewestBooks,
   GetUser,
+  UploadAvatar,
+  UploadCover,
 } from "../controllers/user.controller.js";
+
+const storage = multer.memoryStorage();
+const multerAvatar = multer({ storage: storage }).single("avatar");
+const multerCover = multer({ storage: storage }).single("cover");
 
 const router = express.Router();
 
@@ -45,5 +52,11 @@ router.post("/follow", Follow);
 
 // check follow
 router.get("/check-follow", CheckFollow);
+
+// upload avatar
+router.post("/upload-avatar", multerAvatar, UploadAvatar);
+
+// upload cover
+router.post("/upload-cover", multerCover, UploadCover);
 
 export default router;

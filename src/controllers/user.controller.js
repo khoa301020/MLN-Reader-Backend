@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import _const from "../constants/const.js";
 import * as Helper from "../helper/helper.js";
+import bucket from "../libs/GCP-Storage.js";
 import { Comment, SystemStatus } from "../models/common.model.js";
 import { Manga } from "../models/manga.model.js";
 import { Novel } from "../models/novel.model.js";
@@ -148,7 +149,7 @@ const GetUser = (req, res) => {
   const { id } = req.query;
 
   User.findOne({ id })
-    .select("-_id id name avatar email role")
+    .select("-_id id name avatar cover email role")
     .populate("uploadedNovels")
     .populate("uploadedMangas")
     .populate("uploadedNovelChapters")
@@ -276,7 +277,7 @@ const GetSelf = (req, res) => {
   const userId = decoded.id;
 
   User.findOne({ id: userId })
-    .select("-_id id name avatar email role")
+    .select("-_id id name avatar cover email role")
     .populate("uploadedNovels")
     .populate("uploadedMangas")
     .populate("uploadedNovelChapters")
@@ -377,6 +378,90 @@ const CheckFollow = (req, res) => {
   });
 };
 
+const UploadAvatar = async (req, res) => {
+  const token = req.headers?.authorization?.split(" ")[1];
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (e) {
+    return res.unauth({ message: "Invalid token" });
+  }
+
+  if (req.file) {
+    const filePath = `user/avatars/${Date.now()}.${req.file.originalname
+      .split(".")
+      .pop()}`;
+    const file = bucket
+      .file(filePath)
+      .save(req.file.buffer, {
+        metadata: {
+          contentType: req.file.mimetype,
+          cacheControl: "max-age=0,no-cache",
+        },
+      })
+      .then(async () => {
+        const avatar = {
+          name: req.file.originalname,
+          status: "done",
+          url: process.env.GCP_STORAGE_URL + filePath,
+          thumbUrl: process.env.GCP_STORAGE_URL + filePath,
+        };
+
+        await User.findOneAndUpdate({ id: decoded.id }, { avatar: avatar.url });
+
+        res.status(200).json(avatar);
+      })
+      .catch((err) => {
+        res.status(500).json(err);
+      });
+  } else {
+    res.status(500).json({ message: "No file uploaded" });
+  }
+};
+
+const UploadCover = async (req, res) => {
+  const token = req.headers?.authorization?.split(" ")[1];
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (e) {
+    return res.unauth({ message: "Invalid token" });
+  }
+
+  if (req.file) {
+    const filePath = `user/covers/${Date.now()}.${req.file.originalname
+      .split(".")
+      .pop()}`;
+    const file = bucket
+      .file(filePath)
+      .save(req.file.buffer, {
+        metadata: {
+          contentType: req.file.mimetype,
+          cacheControl: "max-age=0,no-cache",
+        },
+      })
+      .then(async () => {
+        const cover = {
+          name: req.file.originalname,
+          status: "done",
+          url: process.env.GCP_STORAGE_URL + filePath,
+          thumbUrl: process.env.GCP_STORAGE_URL + filePath,
+        };
+
+        await User.findOneAndUpdate({ id: decoded.id }, { cover: cover.url });
+
+        res.status(200).json(cover);
+      })
+      .catch((err) => {
+        res.status(500).json(err);
+      });
+  } else {
+    res.status(500).json({ message: "No file uploaded" });
+  }
+};
+
 export {
   CommentAction,
   GetUser,
@@ -386,4 +471,6 @@ export {
   GetSelf,
   Follow,
   CheckFollow,
+  UploadAvatar,
+  UploadCover,
 };
