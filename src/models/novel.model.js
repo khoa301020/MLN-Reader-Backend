@@ -326,10 +326,27 @@ novelSchema.virtual("lastChapter", {
   match: { deletedAt: null },
 });
 
+novelSchema.virtual("sectionCount", {
+  ref: "NovelSection",
+  localField: "id",
+  foreignField: "novelId",
+  options: {
+    match: {
+      deletedAt: null,
+    },
+  },
+  count: true,
+});
+
 novelSchema.virtual("chapterCount", {
   ref: "NovelChapter",
   localField: "id",
   foreignField: "novelId",
+  options: {
+    match: {
+      deletedAt: null,
+    },
+  },
   count: true,
 });
 

@@ -67,6 +67,8 @@ const Login = (req, res) => {
     async (err, user) => {
       if (err) return res.error({ message: "Error occured", errors: err });
       if (!user) return res.unauth({ message: "User not found" });
+      if (user.accountStatus.status === "disabled")
+        return res.unauth({ message: "User has been disabled" });
 
       const checkValidPassword = await user.isValidPassword(req.body.password);
       if (!checkValidPassword)
@@ -88,6 +90,7 @@ const Login = (req, res) => {
           token,
           username: user.name,
           role: user.role,
+          avatar: user.avatar,
         },
       });
     }
@@ -118,19 +121,24 @@ const Verify = (req, res) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    User.findOne({ id: decoded.id, token: token }, (err, user) => {
-      if (err) return res.internal({ message: "Error occured", errors: err });
-      if (!user) return res.unauth({ message: "User not found" });
-      if (user.name !== username) return res.unauth({ message: "Wrong user" });
+    User.findOne(
+      { id: decoded.id, token: token, "accountStatus.status": "active" },
+      (err, user) => {
+        if (err) return res.internal({ message: "Error occured", errors: err });
+        if (!user) return res.unauth({ message: "User not found" });
+        if (user.name !== username)
+          return res.unauth({ message: "Wrong user" });
 
-      res.success({
-        message: "User verified",
-        result: {
-          username: user.name,
-          role: user.role,
-        },
-      });
-    });
+        res.success({
+          message: "User verified",
+          result: {
+            username: user.name,
+            role: user.role,
+            avatar: user.avatar,
+          },
+        });
+      }
+    );
   } catch (error) {
     return res.unauth({ message: "Invalid token" });
   }
