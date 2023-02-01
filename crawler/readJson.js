@@ -6,11 +6,16 @@ import { Manga } from "../src/models/manga.model.js";
 import { Novel } from "../src/models/novel.model.js";
 
 function prettyAll() {
-  const jsonsInDir = fs.readdirSync('./crawler/backup').filter(file => path.extname(file) === '.json');
+  const jsonsInDir = fs
+    .readdirSync("./crawler/backup")
+    .filter((file) => path.extname(file) === ".json");
 
   let noteCount = 1;
-  jsonsInDir.forEach(file => {
-    const fileData = fs.readFileSync(path.join('./crawler/backup', file), 'utf8');
+  jsonsInDir.forEach((file) => {
+    const fileData = fs.readFileSync(
+      path.join("./crawler/backup", file),
+      "utf8"
+    );
     const novel = JSON.parse(fileData.toString());
     novel.description = novel.description.trim();
 
@@ -30,7 +35,7 @@ function prettyAll() {
       viewCount: novel.viewCount,
       ratingCount: novel.ratingCount,
       lastUpdate: novel.lastUpdate,
-    }
+    };
 
     delete novel.title;
     delete novel.url;
@@ -59,30 +64,30 @@ function prettyAll() {
         try {
           let $ = cheerio.load(chapter.content);
 
-          $('h3+p+p+a+a').remove();
-          $('h3+p+p+a').remove();
-          $('h3+p+p').remove();
-          $('h3+p').remove();
-          $('h3').remove();
+          $("h3+p+p+a+a").remove();
+          $("h3+p+p+a").remove();
+          $("h3+p+p").remove();
+          $("h3+p").remove();
+          $("h3").remove();
 
           chapter.notes = [];
-          $('.note-reg>div').each((i, el) => {
+          $(".note-reg>div").each((i, el) => {
             const note = "note" + noteCount++;
-            const noteId = $(el).attr('id');
+            const noteId = $(el).attr("id");
             // check p in $2 text contains noteId and replace with note
-            $('p').each((i, el) => {
+            $("p").each((i, el) => {
               if ($(el).text().includes(noteId)) {
                 $(el).text($(el).text().replace(noteId, note));
               }
             });
-            const noteContent = $(el).find('span.note-content_real').html();
-            chapter.notes.push({ id: note, hakoId: noteId, content: noteContent });
+            const noteContent = $(el).find("span.note-content_real").html();
+            chapter.notes.push({ id: note, content: noteContent });
           });
 
-          $('.note-reg').remove();
-          $('head').remove();
+          $(".note-reg").remove();
+          $("head").remove();
 
-          chapter.content = $('body').html().trim();
+          chapter.content = $("body").html().trim();
         } catch (error) {
           console.log(chapter);
           console.log(error);
@@ -90,42 +95,57 @@ function prettyAll() {
       }
     }
 
-    fs.writeFileSync(path.join('./crawler/data', file), JSON.stringify(novel));
+    fs.writeFileSync(path.join("./crawler/data", file), JSON.stringify(novel));
     console.log(`Done: ${file}`);
   });
 }
 
 async function addDescription() {
-  const jsonsInDir = fs.readdirSync('./crawler/backup').filter(file => path.extname(file) === '.json');
+  const jsonsInDir = fs
+    .readdirSync("./crawler/backup")
+    .filter((file) => path.extname(file) === ".json");
 
-  jsonsInDir.forEach(async file => {
-    const fileData = fs.readFileSync(path.join('./crawler/backup', file), 'utf8');
+  jsonsInDir.forEach(async (file) => {
+    const fileData = fs.readFileSync(
+      path.join("./crawler/backup", file),
+      "utf8"
+    );
     const novel = JSON.parse(fileData.toString());
 
-    await axios.get(novel.url).then(res => {
+    await axios.get(novel.url).then((res) => {
       const $ = cheerio.load(res.data);
-      novel.cover = $(".series-cover .img-in-ratio").attr("style").split("'")[1];
-      novel.otherNames = $(".fact-value div").toArray().map((e) => $(e).text().trim());
-      novel.description = $('.summary-content').text().trim();
+      novel.cover = $(".series-cover .img-in-ratio")
+        .attr("style")
+        .split("'")[1];
+      novel.otherNames = $(".fact-value div")
+        .toArray()
+        .map((e) => $(e).text().trim());
+      novel.description = $(".summary-content").text().trim();
 
       for (const section of novel.sections) {
         $("section.volume-list").each((i, el) => {
           const sectionId = $(el).find(".sect-header").attr("id");
           if (sectionId === section.id) {
-            section.cover = $(el).find(".img-in-ratio").attr("style").split("'")[1];
+            section.cover = $(el)
+              .find(".img-in-ratio")
+              .attr("style")
+              .split("'")[1];
           }
         });
       }
     });
 
-    fs.writeFileSync(path.join('./crawler/backup', file), JSON.stringify(novel));
+    fs.writeFileSync(
+      path.join("./crawler/backup", file),
+      JSON.stringify(novel)
+    );
     console.log(`Done: ${file}`);
   });
 }
 
 function addBookToUser() {
   try {
-    const items = ['user_2', 'user_3', 'user_4'];
+    const items = ["user_2", "user_3", "user_4"];
     Novel.find({}).exec((err, novels) => {
       console.log(novels.length);
       for (const novel of novels) {
@@ -146,7 +166,6 @@ function addBookToUser() {
     console.log(error);
   }
 }
-
 
 // prettyAll();
 // await addDescription();

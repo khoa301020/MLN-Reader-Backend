@@ -188,7 +188,7 @@ const GetManga = (req, res) => {
         path: "sections",
         populate: {
           path: "chapters",
-          select: "-content -notes -hakoUrl",
+          select: "-content -notes",
         },
       });
   }

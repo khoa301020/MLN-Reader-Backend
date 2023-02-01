@@ -95,7 +95,7 @@ const GetNovel = (req, res) => {
         path: "sections",
         populate: {
           path: "chapters",
-          select: "-content -notes -hakoUrl",
+          select: "-content -notes",
         },
       });
   }
@@ -299,8 +299,6 @@ const CreateAction = (req, res) => {
     case "novel":
       lastIdProperty = "lastNovelId";
       entity = new Novel({
-        hakoId: req.body.hakoId,
-        hakoUrl: req.body.hakoUrl,
         title: req.body.title,
         cover: req.body.cover,
         author: req.body.author,
@@ -320,7 +318,6 @@ const CreateAction = (req, res) => {
       lastIdProperty = "lastNovelSectionId";
       entity = new Section({
         novelId: req.body.novelId,
-        hakoId: req.body.hakoId,
         cover: req.body.cover,
         name: req.body.name,
       });
@@ -334,8 +331,6 @@ const CreateAction = (req, res) => {
       entity = new Chapter({
         novelId: req.body.novelId,
         sectionId: req.body.sectionId,
-        hakoId: req.body.hakoId,
-        hakoUrl: req.body.hakoUrl,
         title: req.body.title,
         content: req.body.content,
         wordCount: req.body.wordCount,
@@ -350,7 +345,6 @@ const CreateAction = (req, res) => {
       lastIdProperty = "lastNovelNoteId";
       entity = new Note({
         chapterId: req.body.chapterId,
-        hakoId: req.body.hakoId,
         content: req.body.content,
       });
       prefix = "note";
