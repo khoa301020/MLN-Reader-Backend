@@ -182,10 +182,12 @@ const GetManga = (req, res) => {
       .populate({
         path: "comments",
         select: "-_id id userId content createdAt",
+        match: { deletedAt: null },
         populate: { path: "user", select: "-_id id name avatar" },
       })
       .populate({
         path: "sections",
+        match: { deletedAt: null },
         populate: {
           path: "chapters",
           select: "-content -notes",

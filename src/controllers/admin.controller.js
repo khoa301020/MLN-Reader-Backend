@@ -112,6 +112,7 @@ export const GetNewestComments = (req, res) => {
   try {
     Comment.find({
       $or: [{ type: "manga" }, { type: "novel" }],
+      deletedAt: null,
     })
       .select("path targetId type userId content createdAt")
       .populate("user", "name avatar")
@@ -129,4 +130,162 @@ export const GetNewestComments = (req, res) => {
   }
 };
 
-export const disableUser = (req, res) => {};
+export const BanUser = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await User.findOneAndUpdate(
+      { id },
+      {
+        "accountStatus.status": "disabled",
+      },
+      { new: true }
+    )
+      .select("id avatar name email accountStatus createdAt")
+      .populate("uploadedNovels")
+      .populate("uploadedMangas");
+    res.success({ message: "User banned successfully", result: user });
+  } catch (err) {
+    console.log(err);
+    res.error({ message: "Error occurred", errors: err });
+  }
+};
+
+export const UnbanUser = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await User.findOneAndUpdate(
+      { id },
+      {
+        "accountStatus.status": "active",
+      },
+      { new: true }
+    )
+      .select("id avatar name email accountStatus createdAt")
+      .populate("uploadedNovels")
+      .populate("uploadedMangas");
+    res.success({ message: "User unbanned successfully", result: user });
+  } catch (err) {
+    console.log(err);
+    res.error({ message: "Error occurred", errors: err });
+  }
+};
+
+export const DeleteNovel = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const book = await Novel.findOneAndUpdate(
+      { id },
+      {
+        deletedAt: Date.now(),
+      },
+      { new: true }
+    )
+      .select("id cover title author tags status uploader deletedAt")
+      .populate("sectionCount")
+      .populate("chapterCount");
+    res.success({ message: "Book deleted successfully", result: book });
+  } catch (err) {
+    console.log(err);
+    res.error({ message: "Error occurred", errors: err });
+  }
+};
+
+export const RestoreNovel = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const book = await Novel.findOneAndUpdate(
+      { id },
+      {
+        deletedAt: null,
+      },
+      { new: true }
+    )
+      .select("id cover title author tags status uploader deletedAt")
+      .populate("sectionCount")
+      .populate("chapterCount");
+    res.success({ message: "Book restored successfully", result: book });
+  } catch (err) {
+    console.log(err);
+    res.error({ message: "Error occurred", errors: err });
+  }
+};
+
+export const DeleteManga = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const book = await Manga.findOneAndUpdate(
+      { id },
+      {
+        deletedAt: Date.now(),
+      },
+      { new: true }
+    )
+      .select("id cover title author tags status uploader deletedAt")
+      .populate("sectionCount")
+      .populate("chapterCount");
+    res.success({ message: "Book deleted successfully", result: book });
+  } catch (err) {
+    console.log(err);
+    res.error({ message: "Error occurred", errors: err });
+  }
+};
+
+export const RestoreManga = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const book = await Manga.findOneAndUpdate(
+      { id },
+      {
+        deletedAt: null,
+      },
+      { new: true }
+    )
+      .select("id cover title author tags status uploader deletedAt")
+      .populate("sectionCount")
+      .populate("chapterCount");
+    res.success({ message: "Book restored successfully", result: book });
+  } catch (err) {
+    console.log(err);
+    res.error({ message: "Error occurred", errors: err });
+  }
+};
+
+export const DeleteComment = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const comment = await Comment.findOneAndUpdate(
+      { id },
+      {
+        deletedAt: Date.now(),
+      },
+      { new: true }
+    )
+      .select("id targetId type userId content createdAt deletedAt")
+      .populate("user", "id name")
+      .populate("target", "id title cover");
+    res.success({ message: "Comment deleted successfully", result: comment });
+  } catch (err) {
+    console.log(err);
+    res.error({ message: "Error occurred", errors: err });
+  }
+};
+
+export const RestoreComment = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const comment = await Comment.findOneAndUpdate(
+      { id },
+      {
+        deletedAt: null,
+      },
+      { new: true }
+    )
+      .select("id targetId type userId content createdAt deletedAt")
+      .populate("user", "id name")
+      .populate("target", "id title cover");
+    res.success({ message: "Comment restored successfully", result: comment });
+  } catch (err) {
+    console.log(err);
+    res.error({ message: "Error occurred", errors: err });
+  }
+};

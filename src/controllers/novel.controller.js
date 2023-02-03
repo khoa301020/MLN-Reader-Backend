@@ -88,11 +88,13 @@ const GetNovel = (req, res) => {
       .populate("uploaderInfo", "-_id id name avatar")
       .populate({
         path: "comments",
+        match: { deletedAt: null },
         select: "-_id id userId content createdAt",
         populate: { path: "user", select: "-_id id name avatar" },
       })
       .populate({
         path: "sections",
+        match: { deletedAt: null },
         populate: {
           path: "chapters",
           select: "-content -notes",
