@@ -159,7 +159,6 @@ CommentSchema.virtual("target", {
   },
   localField: "targetId",
   foreignField: "id",
-  match: { deletedAt: null },
   justOne: true,
 });
 
