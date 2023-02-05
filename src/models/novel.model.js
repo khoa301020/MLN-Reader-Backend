@@ -297,9 +297,9 @@ novelSchema.virtual("lastChapter", {
   ref: "NovelChapter",
   localField: "id",
   foreignField: "novelId",
-  sort: { createdAt: -1 },
-  justOne: true,
   match: { deletedAt: null },
+  options: { sort: { createdAt: -1 } },
+  justOne: true,
 });
 
 novelSchema.virtual("sectionCount", {

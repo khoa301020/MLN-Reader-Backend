@@ -38,7 +38,7 @@ const GetMangaList = async (req, res) => {
 };
 
 const GetLastUpdate = async (req, res) => {
-  const limit = req.query.limit || 0;
+  const limit = req.query.limit || null;
   const select = "id title cover description tags createdAt";
 
   Manga.find({})
@@ -108,6 +108,8 @@ const GetChapter = (req, res) => {
       if (req.query.isOnly === "true") {
         chapter = {
           id: chapter.id,
+          mangaId: chapter.mangaId,
+          sectionId: chapter.sectionId,
           title: chapter.title,
           pages: chapter.pages,
         };
@@ -435,14 +437,12 @@ const CreateChapter = (req, res) => {
       // check if folder exists in zip
       if (zip.folder(/(.*\/)/).length > 0) {
         console.log(zip.folder(/(.*\/)/));
-        return res.status(400).json({ error: "Zip file contains a directory" });
+        return res.error({ message: "Zip file contains a directory" });
       }
       // check if zip files contain a string file name
       if (zip.file(/([^\d]+)\..*/).length > 0) {
         console.log(zip.file(/^\d$/));
-        return res
-          .status(400)
-          .json({ error: "Zip file contains a non-number name" });
+        return res.error({ message: "Zip file contains a non-number name" });
       }
       let listPages = [];
       let listPromises = [];
@@ -517,12 +517,18 @@ const CreateChapter = (req, res) => {
                       message: `Add chapter to section failed`,
                       errors: err,
                     });
-                  SystemStatus.save((err) => {
+                  SystemStatus.save(async (err) => {
                     if (err)
                       return res.error({
                         message: "Update manga status failed",
                         errors: err,
                       });
+
+                    await Manga.updateOne(
+                      { id: chapter.mangaId },
+                      { lastUpdate: new Date() }
+                    );
+
                     res.created({
                       message: `Chapter ${chapter.id} created!`,
                       result: chapter,
@@ -618,6 +624,7 @@ const UpdateSection = (req, res) => {
           message: "Update section failed",
           errors: err,
         });
+
       res.updated({ message: "Section updated!", result: section });
     });
   });
@@ -632,7 +639,8 @@ const UpdateChapter = (req, res) => {
 
     if (req.file) {
       if (path.extname(req.file?.originalname) !== ".zip") {
-        return res.status(400).json({ error: "File must be a zip file" });
+        console.log("file not .zip");
+        return res.error({ message: "File must be a zip file" });
       }
 
       // Get a list of all the objects in the folder
@@ -649,16 +657,12 @@ const UpdateChapter = (req, res) => {
         // check if folder exists in zip
         if (zip.folder(/(.*\/)/).length > 0) {
           console.log(zip.folder(/(.*\/)/));
-          return res
-            .status(400)
-            .json({ error: "Zip file contains a directory" });
+          return res.error({ message: "Zip file contains a directory" });
         }
         // check if zip files contain a string file name
         if (zip.file(/([^\d]+)\..*/).length > 0) {
           console.log(zip.file(/^\d$/));
-          return res
-            .status(400)
-            .json({ error: "Zip file contains a non-number name" });
+          return res.error({ message: "Zip file contains a non-number name" });
         }
         let listPages = [];
         let listPromises = [];
@@ -700,11 +704,27 @@ const UpdateChapter = (req, res) => {
                 message: "Update chapter failed",
                 errors: err,
               });
+
             res.updated({
               message: "Chapter updated!",
               result: chapter,
             });
           });
+        });
+      });
+    } else {
+      chapter.title = req.body.title;
+
+      chapter.save((err) => {
+        if (err)
+          return res.error({
+            message: "Update chapter failed",
+            errors: err,
+          });
+
+        res.updated({
+          message: "Chapter updated!",
+          result: chapter,
         });
       });
     }

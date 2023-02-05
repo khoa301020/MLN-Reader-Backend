@@ -263,8 +263,9 @@ mangaSchema.virtual("lastChapter", {
   ref: "MangaChapter",
   localField: "id",
   foreignField: "mangaId",
-  justOne: true,
   match: { deletedAt: null },
+  options: { sort: { createdAt: -1 } },
+  justOne: true,
 });
 
 mangaSchema.virtual("sectionCount", {
