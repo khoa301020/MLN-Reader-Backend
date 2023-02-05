@@ -90,13 +90,18 @@ const GetNovel = (req, res) => {
         path: "comments",
         match: { deletedAt: null },
         select: "-_id id userId content createdAt",
-        populate: { path: "user", select: "-_id id name avatar" },
+        populate: {
+          path: "user",
+          match: { deletedAt: null },
+          select: "-_id id name avatar",
+        },
       })
       .populate({
         path: "sections",
         match: { deletedAt: null },
         populate: {
           path: "chapters",
+          match: { deletedAt: null },
           select: "-content -notes",
         },
       });
@@ -117,7 +122,12 @@ const GetNovelUpdate = (req, res) => {
     .populate({
       path: "sections",
       select: "id name",
-      populate: { path: "chapters", select: "id title" },
+      match: { deletedAt: null },
+      populate: {
+        path: "chapters",
+        match: { deletedAt: null },
+        select: "id title",
+      },
     })
     .exec((err, novel) => {
       if (err) return res.error({ message: "Get novel failed", errors: err });
@@ -274,7 +284,6 @@ const GetChapter = (req, res) => {
 };
 
 const CreateAction = (req, res) => {
-  console.log(req.body);
   if (!req.body.subject) return res.error({ message: "Subject is required" });
   if (!_const.NOVEL_SUBJECTS.includes(req.body.subject))
     return res.error({ message: "Subject is invalid" });

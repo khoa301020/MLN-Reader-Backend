@@ -116,7 +116,7 @@ export const GetNewestComments = (req, res) => {
     })
       .select("path targetId type userId content createdAt")
       .populate("user", "name avatar")
-      .populate("target", "title")
+      .populate({ path: "target", select: "title", match: { deletedAt: null } })
       .sort({ createdAt: -1 })
       .limit(10)
       .exec(async (err, comments) => {

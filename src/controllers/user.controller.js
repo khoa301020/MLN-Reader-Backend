@@ -194,7 +194,7 @@ const GetNewestBooks = async (req, res) => {
   const keyword = req.query.keyword || null;
   let query;
   if (keyword) {
-    console.log(decodeURI(keyword));
+    keyword = decodeURI(keyword);
     query = {
       $or: [
         { title: { $regex: keyword, $options: "i" } },

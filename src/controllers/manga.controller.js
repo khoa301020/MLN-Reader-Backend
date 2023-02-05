@@ -185,13 +185,18 @@ const GetManga = (req, res) => {
         path: "comments",
         select: "-_id id userId content createdAt",
         match: { deletedAt: null },
-        populate: { path: "user", select: "-_id id name avatar" },
+        populate: {
+          path: "user",
+          match: { deletedAt: null },
+          select: "-_id id name avatar",
+        },
       })
       .populate({
         path: "sections",
         match: { deletedAt: null },
         populate: {
           path: "chapters",
+          match: { deletedAt: null },
           select: "-content -notes",
         },
       });
@@ -211,8 +216,13 @@ const GetMangaUpdate = (req, res) => {
     .select("id title")
     .populate({
       path: "sections",
+      match: { deletedAt: null },
       select: "id name",
-      populate: { path: "chapters", select: "id title" },
+      populate: {
+        path: "chapters",
+        match: { deletedAt: null },
+        select: "id title",
+      },
     })
     .exec((err, manga) => {
       if (err) return res.error({ message: "Get manga failed", errors: err });
