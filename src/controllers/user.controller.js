@@ -245,14 +245,14 @@ const GetNewestBooks = async (req, res) => {
 
 const GetCompletedBooks = async (req, res) => {
   const novels = await Novel.aggregate([
-    { $match: { status: "Đã hoàn thành" } },
+    { $match: { status: "Đã hoàn thành", deletedAt: null } },
     { $sample: { size: 8 } },
     { $project: { id: 1, title: 1, cover: 1 } },
     { $addFields: { type: "novel" } },
   ]);
 
   const mangas = await Manga.aggregate([
-    { $match: { status: "Đã hoàn thành" } },
+    { $match: { status: "Đã hoàn thành", deletedAt: null } },
     { $sample: { size: 8 } },
     { $project: { id: 1, title: 1, cover: 1 } },
     { $addFields: { type: "manga" } },
