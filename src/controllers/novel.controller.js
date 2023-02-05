@@ -14,7 +14,7 @@ const GetNovelList = async (req, res) => {
 
   const select = "id title cover description rating followers statistics";
 
-  Novel.find({})
+  Novel.find({ deletedAt: null })
     .select(select)
     .sort(_const.QUERY_SORT[sort])
     .skip((page - 1) * limit)
@@ -36,7 +36,7 @@ const GetLastUpdate = async (req, res) => {
   const limit = req.query.limit || null;
   const select = "id title cover description tags";
 
-  Novel.find({})
+  Novel.find({ deletedAt: null })
     .populate({
       path: "lastChapter",
       select: "id title createdAt",

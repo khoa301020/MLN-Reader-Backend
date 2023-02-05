@@ -19,7 +19,7 @@ const GetMangaList = async (req, res) => {
 
   const select = "id title cover description rating followers statistics";
 
-  Manga.find({})
+  Manga.find({ deletedAt: null })
     .select(select)
     .sort(_const.QUERY_SORT[sort])
     .skip((page - 1) * limit)
@@ -41,7 +41,7 @@ const GetLastUpdate = async (req, res) => {
   const limit = req.query.limit || null;
   const select = "id title cover description tags createdAt";
 
-  Manga.find({})
+  Manga.find({ deletedAt: null })
     .populate({
       path: "lastChapter",
       select: "id title createdAt",
@@ -260,12 +260,14 @@ const GetSection = (req, res) => {
   if (!req.query.sectionId)
     return res.error({ message: "Section id is required" });
 
-  Section.findOne({ id: req.query.sectionId }).exec((err, section) => {
-    if (err) return res.error({ message: "Get section failed", errors: err });
-    if (!section) return res.error({ message: "Section not found" });
+  Section.findOne({ id: req.query.sectionId, deletedAt: null }).exec(
+    (err, section) => {
+      if (err) return res.error({ message: "Get section failed", errors: err });
+      if (!section) return res.error({ message: "Section not found" });
 
-    res.success({ message: "Get section successfully", result: section });
-  });
+      res.success({ message: "Get section successfully", result: section });
+    }
+  );
 };
 
 const CreateManga = (req, res) => {

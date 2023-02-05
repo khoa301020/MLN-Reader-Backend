@@ -238,19 +238,6 @@ const mangaSchema = new mongoose.Schema({
   },
 });
 
-// filter deletedAt
-mangaSchema.pre("find", function () {
-  this.where({ deletedAt: null });
-});
-
-mangaChapterSchema.pre("find", function () {
-  this.where({ deletedAt: null });
-});
-
-mangaSectionSchema.pre("find", function () {
-  this.where({ deletedAt: null });
-});
-
 mangaSchema.virtual("followersCount").get(function () {
   return this.followers?.length;
 });

@@ -268,23 +268,6 @@ const novelSchema = new mongoose.Schema({
   },
 });
 
-// filter deletedAt
-novelSchema.pre("find", function () {
-  this.where({ deletedAt: null });
-});
-
-novelChapterSchema.pre("find", function () {
-  this.where({ deletedAt: null });
-});
-
-novelSectionSchema.pre("find", function () {
-  this.where({ deletedAt: null });
-});
-
-novelNoteSchema.pre("find", function () {
-  this.where({ deletedAt: null });
-});
-
 novelSchema.virtual("followersCount").get(function () {
   return this.followers?.length;
 });
