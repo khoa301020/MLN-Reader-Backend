@@ -203,9 +203,10 @@ const GetNewestBooks = async (req, res) => {
         { artist: { $regex: keyword, $options: "i" } },
         { description: { $regex: keyword, $options: "i" } },
       ],
+      deletedAt: null,
     };
   } else {
-    query = {};
+    query = { deletedAt: null };
   }
 
   var newestNovels = await Novel.find(query)
